@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m venv venv)",
+      "Bash(source venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest backend/tests/ -v)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(rm -rf venv)",
+      "Bash(/opt/homebrew/opt/python@3.12/bin/python3.12 -m venv venv)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(timeout 3 python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\)\")",
+      "Bash(python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\); print\\(''Routes:'', [r.path for r in app.routes]\\)\")",
+      "Bash(python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\); print\\(''Routes:'', [r.path for r in app.routes if hasattr\\(r, ''path''\\)]\\)\")",
+      "Bash(gh repo:*)"
+    ]
+  }
+}
