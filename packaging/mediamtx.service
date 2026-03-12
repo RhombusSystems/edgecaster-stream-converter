@@ -1,0 +1,24 @@
+[Unit]
+Description=MediaMTX RTSP Server
+Documentation=https://github.com/bluenviron/mediamtx
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=edgecaster
+Group=edgecaster
+ExecStart=/usr/local/bin/mediamtx /etc/edgecaster/mediamtx.yml
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

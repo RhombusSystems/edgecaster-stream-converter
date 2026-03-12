@@ -1,0 +1,21 @@
+# EdgeCaster default configuration
+# This file is installed to /etc/edgecaster/config.yaml
+
+# Rhombus Org API Key (set via the web UI)
+api_key: ""
+
+# Admin password hash (set via the web UI during first-run setup)
+admin_password_hash: ""
+
+# Maximum concurrent RTSP streams (protects Pi CPU)
+max_streams: 10
+
+# MediaMTX RTSP settings
+mediamtx_rtsp_port: 8554
+mediamtx_host: "127.0.0.1"
+
+# FFmpeg log level: quiet, panic, fatal, error, warning, info, verbose, debug
+ffmpeg_loglevel: "warning"
+
+# Session signing secret (auto-generated on first run)
+session_secret: ""

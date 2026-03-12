@@ -1,0 +1,54 @@
+# MediaMTX configuration for EdgeCaster
+# Documentation: https://github.com/bluenviron/mediamtx
+
+###############################################
+# General settings
+
+logLevel: info
+logDestinations: [stdout]
+
+###############################################
+# RTSP server
+
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp, udp]
+
+# Allow publishing from localhost (FFmpeg)
+# Allow reading from any source (VMS/NVR clients)
+###############################################
+# RTMP server (disabled for EdgeCaster)
+
+rtmp: no
+
+###############################################
+# HLS server (disabled for EdgeCaster)
+
+hls: no
+
+###############################################
+# WebRTC server (disabled for EdgeCaster)
+
+webrtc: no
+
+###############################################
+# SRT server (disabled for EdgeCaster)
+
+srt: no
+
+###############################################
+# Path defaults
+# Note: RTSP authentication is not configured in v1.
+# To add authentication later, configure publishUser/publishPass
+# and readUser/readPass per path or globally.
+
+pathDefaults:
+  # Allow any source to publish
+  source: publisher
+
+  # Record settings (disabled)
+  record: no
+
+# Dynamic paths: any path name FFmpeg publishes to will be auto-created
+paths:
+  all_others:

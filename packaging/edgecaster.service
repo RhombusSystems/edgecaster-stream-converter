@@ -1,0 +1,27 @@
+[Unit]
+Description=EdgeCaster - Rhombus SRS to RTSP Gateway
+Documentation=https://github.com/RhombusSystems/edgecaster
+After=network-online.target mediamtx.service
+Wants=network-online.target mediamtx.service
+
+[Service]
+Type=simple
+User=edgecaster
+Group=edgecaster
+Environment=EDGECASTER_ENV=production
+WorkingDirectory=/opt/edgecaster
+ExecStart=/opt/edgecaster/venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/edgecaster /var/lib/edgecaster /var/log/edgecaster
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
