@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from backend.app.dependencies import get_config, get_discovery, get_stream_manager, require_auth
+from backend.app.dependencies import get_config, get_discovery, get_stream_manager
 from backend.app.models.settings import SystemStatus
 from backend.app.services.health import get_system_status
 
-router = APIRouter(prefix="/api/system", tags=["system"], dependencies=[Depends(require_auth)])
+router = APIRouter(prefix="/api/system", tags=["system"])
 
 
 @router.get("/status")

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from fastapi import Cookie, HTTPException, status
-
-from backend.app.auth import verify_session_token
 from backend.app.config import EdgeCasterConfig
 from backend.app.services.discovery import DiscoveryService
 from backend.app.services.rhombus_api import RhombusClient
@@ -61,19 +58,3 @@ def get_discovery() -> DiscoveryService:
 
 def get_rhombus_client() -> RhombusClient | None:
     return _rhombus_client
-
-
-async def require_auth(session: str | None = Cookie(default=None)) -> None:
-    """Dependency that enforces authentication on protected routes."""
-    if _config is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    if not _config.admin_password_hash:
-        # First-run: no password set yet, allow access to setup endpoints
-        return
-
-    if not session or not verify_session_token(session, _config.session_secret):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )

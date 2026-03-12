@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 
 class SetupState(str, Enum):
-    NEEDS_PASSWORD = "needs_password"
     NEEDS_API_KEY = "needs_api_key"
     READY = "ready"
 
@@ -19,7 +18,7 @@ class AppSettings(BaseModel):
     hostname: str = ""
     local_ip: str = ""
     api_key_configured: bool = False
-    setup_state: SetupState = SetupState.NEEDS_PASSWORD
+    setup_state: SetupState = SetupState.NEEDS_API_KEY
     max_streams: int = 10
     mediamtx_rtsp_port: int = 8554
 

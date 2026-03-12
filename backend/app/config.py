@@ -28,12 +28,10 @@ class EdgeCasterConfig(BaseModel):
     """Runtime configuration loaded from YAML."""
 
     api_key: str = ""
-    admin_password_hash: str = ""
     max_streams: int = 10
     mediamtx_rtsp_port: int = 8554
     mediamtx_host: str = "127.0.0.1"
     ffmpeg_loglevel: str = "warning"
-    session_secret: str = ""
 
     # Resolved at load time, not persisted
     config_path: Path = Path(".")
@@ -65,13 +63,6 @@ def load_config() -> EdgeCasterConfig:
         with open(config_path) as f:
             data = yaml.safe_load(f) or {}
 
-    # Generate session secret on first run
-    if not data.get("session_secret"):
-        import secrets
-
-        data["session_secret"] = secrets.token_hex(32)
-        _save_raw_config(config_path, data)
-
     config = EdgeCasterConfig(
         config_path=config_path,
         state_dir=state_dir,
@@ -86,12 +77,10 @@ def save_config(config: EdgeCasterConfig) -> None:
     """Persist configuration back to YAML."""
     data = {
         "api_key": config.api_key,
-        "admin_password_hash": config.admin_password_hash,
         "max_streams": config.max_streams,
         "mediamtx_rtsp_port": config.mediamtx_rtsp_port,
         "mediamtx_host": config.mediamtx_host,
         "ffmpeg_loglevel": config.ffmpeg_loglevel,
-        "session_secret": config.session_secret,
     }
     _save_raw_config(config.config_path, data)
 

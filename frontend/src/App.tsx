@@ -1,57 +1,44 @@
 import { useEffect, useState } from "react";
 import type { SetupState } from "./types";
 import * as api from "./api";
-import LoginForm from "./components/LoginForm";
+import SetupForm from "./components/SetupForm";
 import Dashboard from "./components/Dashboard";
 import CameraList from "./components/CameraList";
 import SettingsPanel from "./components/SettingsPanel";
+import bannerImg from "./media/accelerate-banner 827x192.png";
 
 type Page = "dashboard" | "cameras" | "settings";
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [setupState, setSetupState] = useState<SetupState>("needs_password");
+  const [setupState, setSetupState] = useState<SetupState>("needs_api_key");
   const [page, setPage] = useState<Page>("cameras");
   const [checking, setChecking] = useState(true);
 
-  const checkAuth = async () => {
+  const checkSetup = async () => {
     try {
       const status = await api.getAuthStatus();
       setSetupState(status.setup_state);
-
-      if (status.setup_state === "ready") {
-        // Try loading settings to verify session is valid
-        try {
-          await api.getSettings();
-          setAuthenticated(true);
-        } catch {
-          setAuthenticated(false);
-        }
-      } else {
-        setAuthenticated(false);
-      }
     } catch {
-      setAuthenticated(false);
+      // Backend not reachable — stay on setup
     } finally {
       setChecking(false);
     }
   };
 
   useEffect(() => {
-    checkAuth();
+    checkSetup();
   }, []);
 
   if (checking) {
     return <div className="loading">Loading...</div>;
   }
 
-  if (!authenticated || setupState !== "ready") {
+  if (setupState !== "ready") {
     return (
-      <LoginForm
-        setupState={setupState}
+      <SetupForm
         onSuccess={() => {
           setChecking(true);
-          checkAuth();
+          checkSetup();
         }}
       />
     );
@@ -60,7 +47,9 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <h1>EdgeCaster</h1>
+        <div className="sidebar-brand">
+          <img src={bannerImg} alt="EdgeCaster" className="sidebar-logo" />
+        </div>
         <nav>
           <a
             href="#"
@@ -88,14 +77,7 @@ export default function App() {
       <main className="main-content">
         {page === "dashboard" && <Dashboard />}
         {page === "cameras" && <CameraList />}
-        {page === "settings" && (
-          <SettingsPanel
-            onLogout={() => {
-              setAuthenticated(false);
-              setSetupState("ready");
-            }}
-          />
-        )}
+        {page === "settings" && <SettingsPanel />}
       </main>
     </div>
   );

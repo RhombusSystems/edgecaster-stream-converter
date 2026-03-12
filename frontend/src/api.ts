@@ -27,21 +27,6 @@ async function request<T>(
 // Auth
 export const getAuthStatus = () => request<AuthStatus>("/api/auth/status");
 
-export const setupPassword = (password: string) =>
-  request<{ ok: boolean }>("/api/auth/setup-password", {
-    method: "POST",
-    body: JSON.stringify({ password }),
-  });
-
-export const login = (password: string) =>
-  request<{ ok: boolean }>("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ password }),
-  });
-
-export const logout = () =>
-  request<{ ok: boolean }>("/api/auth/logout", { method: "POST" });
-
 // Settings
 export const getSettings = () => request<AppSettings>("/api/settings");
 
@@ -49,12 +34,6 @@ export const setApiKey = (api_key: string) =>
   request<{ ok: boolean }>("/api/settings/api-key", {
     method: "POST",
     body: JSON.stringify({ api_key }),
-  });
-
-export const changePassword = (password: string) =>
-  request<{ ok: boolean }>("/api/settings/admin-password", {
-    method: "POST",
-    body: JSON.stringify({ password }),
   });
 
 export const refreshDiscovery = () =>

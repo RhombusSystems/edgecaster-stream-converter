@@ -16,7 +16,12 @@
       "Bash(timeout 3 python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\)\")",
       "Bash(python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\); print\\(''Routes:'', [r.path for r in app.routes]\\)\")",
       "Bash(python -c \"from backend.app.main import app; print\\(''FastAPI app imports successfully''\\); print\\(''Routes:'', [r.path for r in app.routes if hasattr\\(r, ''path''\\)]\\)\")",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "Skill(marketing:brand-guide)",
+      "Skill(marketing:brand-guide:*)",
+      "Bash(python3 -m pytest backend/tests/ -v)",
+      "Bash(./venv/bin/python -m pytest backend/tests/ -v)",
+      "Bash(npx vite:*)"
     ]
   }
 }

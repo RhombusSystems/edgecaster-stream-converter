@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from backend.app.dependencies import get_discovery, get_stream_manager, require_auth
+from backend.app.dependencies import get_discovery, get_stream_manager
 from backend.app.models.camera import Camera
 
-router = APIRouter(prefix="/api/cameras", tags=["cameras"], dependencies=[Depends(require_auth)])
+router = APIRouter(prefix="/api/cameras", tags=["cameras"])
 
 
 class CameraResponse(Camera):

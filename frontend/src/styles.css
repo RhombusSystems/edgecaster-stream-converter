@@ -1,11 +1,40 @@
 :root {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --border: #e2e5ea;
-  --text: #1a1d23;
-  --text-secondary: #6b7280;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  /* Rhombus Brand Colors — Teals */
+  --rhombus-teal-1: #E9F4F8;
+  --rhombus-teal-2: #4BEBFF;
+  --rhombus-teal-logo: #00C1DE;
+  --rhombus-teal-3: #006F94;
+  --rhombus-teal-4: #00536A;
+  --rhombus-teal-5: #17323B;
+  --rhombus-teal-6: #091D22;
+
+  /* Rhombus Brand Colors — Blue */
+  --rhombus-blue-logo: #2A7DE1;
+
+  /* Rhombus Brand Colors — Neutrals */
+  --rhombus-neutral-1: #FFFFFF;
+  --rhombus-neutral-2: #F4F7FA;
+  --rhombus-neutral-3: #EDF0F3;
+  --rhombus-neutral-4: #DFE2E5;
+  --rhombus-neutral-5: #AEB3B8;
+  --rhombus-neutral-6: #717A81;
+  --rhombus-neutral-7: #4D555E;
+  --rhombus-neutral-8: #0B0C0D;
+
+  /* Rhombus Typography */
+  --font-heading: 'Sora', 'Verdana', 'Helvetica', sans-serif;
+  --font-body: 'DM Sans', 'Verdana', 'Helvetica', sans-serif;
+
+  /* Semantic tokens */
+  --bg: var(--rhombus-neutral-2);
+  --surface: var(--rhombus-neutral-1);
+  --border: var(--rhombus-neutral-4);
+  --text: var(--rhombus-neutral-8);
+  --text-secondary: var(--rhombus-neutral-6);
+  --heading: var(--rhombus-teal-5);
+  --primary: var(--rhombus-teal-2);
+  --primary-hover: var(--rhombus-teal-logo);
+  --accent: var(--rhombus-teal-3);
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
@@ -19,7 +48,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -32,33 +61,51 @@ body {
 }
 
 .sidebar {
-  width: 220px;
-  background: var(--text);
-  color: #fff;
-  padding: 24px 0;
+  width: 240px;
+  background: var(--rhombus-teal-6);
+  color: var(--rhombus-neutral-1);
+  padding: 0;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar h1 {
-  font-size: 18px;
-  padding: 0 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 8px;
+.sidebar-brand {
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-logo {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sidebar nav {
+  padding: 8px 0;
 }
 
 .sidebar nav a {
   display: block;
   padding: 10px 20px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 500;
   transition: background 0.15s, color 0.15s;
 }
 
-.sidebar nav a:hover,
+.sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .sidebar nav a.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(75, 235, 255, 0.1);
+  color: var(--rhombus-teal-2);
+  border-left: 3px solid var(--rhombus-teal-2);
+  padding-left: 17px;
 }
 
 .main-content {
@@ -68,7 +115,10 @@ body {
 }
 
 .main-content h2 {
+  font-family: var(--font-heading);
+  font-weight: 500;
   font-size: 22px;
+  color: var(--heading);
   margin-bottom: 20px;
 }
 
@@ -79,6 +129,12 @@ body {
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 16px;
+}
+
+.card h3 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--heading);
 }
 
 .stats-grid {
@@ -97,9 +153,10 @@ body {
 }
 
 .stat-card .value {
+  font-family: var(--font-heading);
   font-size: 28px;
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 600;
+  color: var(--rhombus-teal-3);
 }
 
 .stat-card .label {
@@ -146,6 +203,7 @@ td {
   padding: 8px 16px;
   border: none;
   border-radius: var(--radius);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -153,16 +211,16 @@ td {
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: #fff;
+  background: var(--rhombus-teal-5);
+  color: var(--rhombus-neutral-1);
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  background: var(--rhombus-teal-4);
 }
 
 .btn-primary:disabled {
-  background: #93c5fd;
+  background: var(--rhombus-neutral-5);
   cursor: not-allowed;
 }
 
@@ -173,12 +231,12 @@ td {
 }
 
 .btn-secondary:hover {
-  background: var(--border);
+  background: var(--rhombus-neutral-3);
 }
 
 .btn-danger {
   background: var(--danger);
-  color: #fff;
+  color: var(--rhombus-neutral-1);
 }
 
 .btn-sm {
@@ -203,7 +261,7 @@ td {
 .toggle .slider {
   position: absolute;
   inset: 0;
-  background: #ccc;
+  background: var(--rhombus-neutral-4);
   border-radius: 24px;
   cursor: pointer;
   transition: background 0.2s;
@@ -216,13 +274,13 @@ td {
   height: 18px;
   left: 3px;
   bottom: 3px;
-  background: #fff;
+  background: var(--rhombus-neutral-1);
   border-radius: 50%;
   transition: transform 0.2s;
 }
 
 .toggle input:checked + .slider {
-  background: var(--primary);
+  background: var(--rhombus-teal-3);
 }
 
 .toggle input:checked + .slider::before {
@@ -266,7 +324,7 @@ td {
 
 .badge-stopped,
 .badge-unknown {
-  background: #f3f4f6;
+  background: var(--rhombus-neutral-3);
   color: var(--text-secondary);
 }
 
@@ -288,23 +346,25 @@ td {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  font-family: var(--font-body);
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s;
 }
 
 .form-group input:focus {
-  border-color: var(--primary);
+  border-color: var(--rhombus-teal-3);
+  box-shadow: 0 0 0 3px rgba(0, 111, 148, 0.1);
 }
 
 /* RTSP URL display */
 .rtsp-url {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;
-  background: #f1f5f9;
+  background: var(--rhombus-teal-1);
   padding: 4px 8px;
   border-radius: 4px;
-  color: var(--primary);
+  color: var(--rhombus-teal-4);
   word-break: break-all;
 }
 
@@ -321,30 +381,40 @@ td {
   margin-top: 8px;
 }
 
-/* Login page */
-.login-container {
+/* Setup page */
+.setup-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--rhombus-teal-6);
 }
 
-.login-box {
+.setup-box {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 12px;
   padding: 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.login-box h1 {
+.setup-icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+}
+
+.setup-box h1 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  color: var(--heading);
   text-align: center;
   margin-bottom: 8px;
 }
 
-.login-box p {
+.setup-box p {
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;

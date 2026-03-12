@@ -1,4 +1,4 @@
-export type SetupState = "needs_password" | "needs_api_key" | "ready";
+export type SetupState = "needs_api_key" | "ready";
 
 export type CameraStatus = "online" | "degraded" | "offline" | "unknown";
 
@@ -49,6 +49,5 @@ export interface AppSettings {
 }
 
 export interface AuthStatus {
-  authenticated: boolean;
   setup_state: SetupState;
 }

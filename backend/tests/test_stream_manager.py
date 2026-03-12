@@ -23,7 +23,6 @@ def config():
         max_streams=3,
         mediamtx_rtsp_port=8554,
         mediamtx_host="127.0.0.1",
-        session_secret="test",
     )
 
 

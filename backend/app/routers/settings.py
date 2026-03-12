@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from backend.app.auth import hash_password
 from backend.app.config import save_config
 from backend.app.dependencies import (
     get_config,
     get_discovery,
     get_rhombus_client,
     get_stream_manager,
-    require_auth,
     set_rhombus_client,
 )
 from backend.app.models.settings import AppSettings, SetupState
@@ -23,15 +21,12 @@ from backend.app.utils.network import get_hostname, get_local_ip
 
 logger = logging.getLogger("edgecaster")
 
-router = APIRouter(prefix="/api/settings", tags=["settings"], dependencies=[Depends(require_auth)])
+router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
 class ApiKeyRequest(BaseModel):
     api_key: str
 
-
-class PasswordChangeRequest(BaseModel):
-    password: str
 
 
 @router.get("")
@@ -39,9 +34,7 @@ async def get_settings() -> AppSettings:
     """Return current application settings (no secrets)."""
     config = get_config()
 
-    if not config.admin_password_hash:
-        setup_state = SetupState.NEEDS_PASSWORD
-    elif not config.api_key:
+    if not config.api_key:
         setup_state = SetupState.NEEDS_API_KEY
     else:
         setup_state = SetupState.READY
@@ -103,24 +96,6 @@ async def set_api_key(req: ApiKeyRequest) -> dict:
         logger.warning("Auto-discovery after API key update failed: %s", e)
 
     logger.info("API key updated successfully")
-    return {"ok": True}
-
-
-@router.post("/admin-password")
-async def change_admin_password(req: PasswordChangeRequest) -> dict:
-    """Change the admin password."""
-    config = get_config()
-
-    if len(req.password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters.",
-        )
-
-    config.admin_password_hash = hash_password(req.password)
-    save_config(config)
-
-    logger.info("Admin password changed")
     return {"ok": True}
 
 

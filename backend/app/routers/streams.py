@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
-from backend.app.dependencies import get_discovery, get_stream_manager, require_auth
+from backend.app.dependencies import get_discovery, get_stream_manager
 from backend.app.models.stream import StreamInfo
 
-router = APIRouter(prefix="/api/streams", tags=["streams"], dependencies=[Depends(require_auth)])
+router = APIRouter(prefix="/api/streams", tags=["streams"])
 
 
 @router.get("")
