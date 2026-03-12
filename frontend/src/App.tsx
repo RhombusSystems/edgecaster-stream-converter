@@ -73,6 +73,9 @@ export default function App() {
             Settings
           </a>
         </nav>
+        <div className="sidebar-footer">
+          Made by Rhombus Developers with ❤️ in Sacramento
+        </div>
       </aside>
       <main className="main-content">
         {page === "dashboard" && <Dashboard />}

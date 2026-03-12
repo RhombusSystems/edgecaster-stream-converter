@@ -28,6 +28,11 @@ class ApiKeyRequest(BaseModel):
     api_key: str
 
 
+class UpdateScheduleRequest(BaseModel):
+    auto_update_enabled: bool
+    update_hour_start: int
+    update_hour_end: int
+
 
 @router.get("")
 async def get_settings() -> AppSettings:
@@ -46,6 +51,9 @@ async def get_settings() -> AppSettings:
         setup_state=setup_state,
         max_streams=config.max_streams,
         mediamtx_rtsp_port=config.mediamtx_rtsp_port,
+        auto_update_enabled=config.auto_update_enabled,
+        update_hour_start=config.update_hour_start,
+        update_hour_end=config.update_hour_end,
     )
 
 
@@ -96,6 +104,30 @@ async def set_api_key(req: ApiKeyRequest) -> dict:
         logger.warning("Auto-discovery after API key update failed: %s", e)
 
     logger.info("API key updated successfully")
+    return {"ok": True}
+
+
+@router.put("/update-schedule")
+async def set_update_schedule(req: UpdateScheduleRequest) -> dict:
+    """Configure the auto-update window."""
+    if not (0 <= req.update_hour_start <= 23) or not (0 <= req.update_hour_end <= 23):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Hours must be between 0 and 23.",
+        )
+
+    config = get_config()
+    config.auto_update_enabled = req.auto_update_enabled
+    config.update_hour_start = req.update_hour_start
+    config.update_hour_end = req.update_hour_end
+    save_config(config)
+
+    logger.info(
+        "Update schedule changed: enabled=%s, window=%02d:00-%02d:00",
+        config.auto_update_enabled,
+        config.update_hour_start,
+        config.update_hour_end,
+    )
     return {"ok": True}
 
 

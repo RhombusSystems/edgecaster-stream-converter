@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,6 +19,7 @@ from backend.app.services.discovery import DiscoveryService
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.services.state_store import StateStore
 from backend.app.services.stream_manager import StreamManager
+from backend.app.services.watchdog import notify_ready, notify_stopping, watchdog_loop
 
 logger = logging.getLogger("edgecaster")
 
@@ -57,11 +59,21 @@ async def lifespan(app: FastAPI):
     # Register singletons for dependency injection
     init_services(config, state_store, stream_manager, discovery, rhombus_client)
 
+    # Start background tasks
+    watchdog_task = asyncio.create_task(watchdog_loop(), name="watchdog")
+    health_task = asyncio.create_task(
+        stream_manager.health_check_loop(), name="health-check"
+    )
+
+    notify_ready()
     logger.info("EdgeCaster ready")
     yield
 
     # Shutdown
+    notify_stopping()
     logger.info("EdgeCaster shutting down")
+    watchdog_task.cancel()
+    health_task.cancel()
     await stream_manager.shutdown()
     if rhombus_client:
         await rhombus_client.close()

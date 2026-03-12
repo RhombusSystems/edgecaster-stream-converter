@@ -18,6 +18,8 @@ logger = logging.getLogger("edgecaster.stream_manager")
 
 RETRY_DELAY_SECONDS = 5
 MAX_RETRY_ATTEMPTS = 10
+RECOVERY_BACKOFF_SECONDS = 300  # 5-minute backoff after max retries exhausted
+HEALTH_CHECK_INTERVAL = 60  # seconds between health check sweeps
 
 
 @dataclass
@@ -257,8 +259,27 @@ class StreamManager:
             stream.state = StreamState.FAILED
             stream.error_message = str(e)
 
+    async def health_check_loop(self) -> None:
+        """Periodic health check for all running streams."""
+        while not self._shutting_down:
+            await asyncio.sleep(HEALTH_CHECK_INTERVAL)
+            if self._shutting_down:
+                break
+
+            for stream in list(self._streams.values()):
+                if stream.state != StreamState.RUNNING:
+                    continue
+                if stream.process is None or stream.process.returncode is not None:
+                    logger.warning(
+                        "Health check: stream for %s has dead process, forcing restart",
+                        stream.camera_name,
+                    )
+                    stream.state = StreamState.RESTARTING
+                    stream.retry_count = 0
+                    await self._launch_stream(stream)
+
     async def _monitor_stream(self, stream: ManagedStream) -> None:
-        """Monitor an FFmpeg process and restart on failure."""
+        """Monitor an FFmpeg process and restart on failure with infinite recovery."""
         while not self._shutting_down and stream.camera_uuid in self._state_store.get_enabled_cameras():
             if stream.process is None:
                 break
@@ -293,10 +314,27 @@ class StreamManager:
             )
 
             if stream.retry_count >= MAX_RETRY_ATTEMPTS:
+                # Recovery backoff — never permanently give up on a 24/7 device
                 stream.state = StreamState.FAILED
-                stream.error_message = f"Max retries exceeded (last exit code: {return_code})"
-                logger.error("Giving up on stream for %s after %d attempts", stream.camera_name, MAX_RETRY_ATTEMPTS)
-                break
+                stream.error_message = (
+                    f"Retries exhausted, backing off {RECOVERY_BACKOFF_SECONDS}s before next cycle"
+                )
+                logger.error(
+                    "Max retries for %s exhausted, backing off %ds before retry cycle",
+                    stream.camera_name,
+                    RECOVERY_BACKOFF_SECONDS,
+                )
+                await asyncio.sleep(RECOVERY_BACKOFF_SECONDS)
+
+                if self._shutting_down:
+                    break
+
+                # Reset and try again
+                stream.retry_count = 0
+                stream.state = StreamState.RESTARTING
+                stream.error_message = "Restarting after backoff"
+                await self._launch_stream(stream)
+                return
 
             # Retry
             stream.state = StreamState.RESTARTING

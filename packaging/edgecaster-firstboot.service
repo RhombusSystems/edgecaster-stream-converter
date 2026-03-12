@@ -1,0 +1,13 @@
+[Unit]
+Description=EdgeCaster First Boot Setup
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/edgecaster/.first-boot
+
+[Service]
+Type=oneshot
+ExecStart=/opt/edgecaster/scripts/first-boot.sh
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

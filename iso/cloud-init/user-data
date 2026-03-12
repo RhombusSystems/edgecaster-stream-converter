@@ -1,0 +1,44 @@
+#cloud-config
+
+hostname: edgecaster
+manage_etc_hosts: true
+
+users:
+  - name: edgecaster
+    gecos: EdgeCaster Service
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: false
+    # Default password: edgecaster (change on first login)
+    passwd: "$6$rounds=4096$edgecaster$WfQ8YHJ5UjKEjL5Qe8xHmG9LjMvK2R3a0N1b4C5d6E7f8G9h0I1j2K3l4M5n6O7p8Q9r0S1t2U3v4W5x6Y7z8"
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - python3
+  - python3-pip
+  - python3-venv
+  - ffmpeg
+  - nginx
+  - curl
+  - cloud-guest-utils
+
+runcmd:
+  # Clone EdgeCaster
+  - git clone https://github.com/RhombusSystems/edgecaster-stream-converter.git /opt/edgecaster
+
+  # Create first-boot sentinel
+  - touch /opt/edgecaster/.first-boot
+
+  # Run installer
+  - bash /opt/edgecaster/scripts/install.sh
+
+  # Disable cloud-init on subsequent boots
+  - touch /etc/cloud/cloud-init.disabled
+
+  # Signal completion
+  - echo "EdgeCaster cloud-init provisioning complete" | tee /var/log/edgecaster/cloud-init-done.log
+
+final_message: "EdgeCaster provisioned in $UPTIME seconds"

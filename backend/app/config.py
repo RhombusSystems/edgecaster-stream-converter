@@ -32,6 +32,9 @@ class EdgeCasterConfig(BaseModel):
     mediamtx_rtsp_port: int = 8554
     mediamtx_host: str = "127.0.0.1"
     ffmpeg_loglevel: str = "warning"
+    auto_update_enabled: bool = True
+    update_hour_start: int = 2
+    update_hour_end: int = 5
 
     # Resolved at load time, not persisted
     config_path: Path = Path(".")
@@ -81,6 +84,9 @@ def save_config(config: EdgeCasterConfig) -> None:
         "mediamtx_rtsp_port": config.mediamtx_rtsp_port,
         "mediamtx_host": config.mediamtx_host,
         "ffmpeg_loglevel": config.ffmpeg_loglevel,
+        "auto_update_enabled": config.auto_update_enabled,
+        "update_hour_start": config.update_hour_start,
+        "update_hour_end": config.update_hour_end,
     }
     _save_raw_config(config.config_path, data)
 

@@ -21,6 +21,9 @@ class AppSettings(BaseModel):
     setup_state: SetupState = SetupState.NEEDS_API_KEY
     max_streams: int = 10
     mediamtx_rtsp_port: int = 8554
+    auto_update_enabled: bool = True
+    update_hour_start: int = 2
+    update_hour_end: int = 5
 
 
 class SystemStatus(BaseModel):

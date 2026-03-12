@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import logging.handlers
 import sys
 from pathlib import Path
 
@@ -27,7 +28,9 @@ def setup_logging(log_dir: Path, dev_mode: bool = False) -> None:
 
         if not dev_mode:
             log_file = log_dir / filename
-            file_handler = logging.FileHandler(log_file)
+            file_handler = logging.handlers.RotatingFileHandler(
+                log_file, maxBytes=10_000_000, backupCount=5
+            )
             file_handler.setFormatter(formatter)
             file_handler.setLevel(logging.INFO)
             logger.addHandler(file_handler)

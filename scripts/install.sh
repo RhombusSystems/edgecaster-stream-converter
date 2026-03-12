@@ -107,13 +107,25 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$CONFIG_DIR" "$STATE_DIR" "$LOG_DIR" "$I
 echo ">>> Installing systemd services..."
 cp "$INSTALL_DIR/packaging/mediamtx.service" /etc/systemd/system/mediamtx.service
 cp "$INSTALL_DIR/packaging/edgecaster.service" /etc/systemd/system/edgecaster.service
+cp "$INSTALL_DIR/packaging/edgecaster-update.service" /etc/systemd/system/edgecaster-update.service
+cp "$INSTALL_DIR/packaging/edgecaster-update.timer" /etc/systemd/system/edgecaster-update.timer
+
+# Install logrotate config
+cp "$INSTALL_DIR/packaging/edgecaster-logrotate.conf" /etc/logrotate.d/edgecaster
+
+# Install first-boot service if sentinel exists
+if [ -f "$INSTALL_DIR/.first-boot" ]; then
+    cp "$INSTALL_DIR/packaging/edgecaster-firstboot.service" /etc/systemd/system/edgecaster-firstboot.service
+fi
+
 systemctl daemon-reload
 
 # 13. Enable and start services
 echo ">>> Starting services..."
-systemctl enable mediamtx edgecaster
+systemctl enable mediamtx edgecaster edgecaster-update.timer
 systemctl restart mediamtx
 systemctl restart edgecaster
+systemctl start edgecaster-update.timer
 
 echo ""
 echo "=== EdgeCaster installed successfully! ==="

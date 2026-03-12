@@ -434,6 +434,17 @@ td {
   color: var(--text-secondary);
 }
 
+/* Sidebar footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* Loading */
 .loading {
   text-align: center;

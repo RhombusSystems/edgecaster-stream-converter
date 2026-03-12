@@ -46,6 +46,15 @@ export interface AppSettings {
   setup_state: SetupState;
   max_streams: number;
   mediamtx_rtsp_port: number;
+  auto_update_enabled: boolean;
+  update_hour_start: number;
+  update_hour_end: number;
+}
+
+export interface UpdateSchedule {
+  auto_update_enabled: boolean;
+  update_hour_start: number;
+  update_hour_end: number;
 }
 
 export interface AuthStatus {

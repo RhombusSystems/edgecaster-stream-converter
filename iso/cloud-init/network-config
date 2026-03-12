@@ -1,0 +1,14 @@
+version: 2
+ethernets:
+  id0:
+    match:
+      driver: "*"
+    dhcp4: true
+    optional: true
+wifis:
+  id0:
+    match:
+      driver: "*"
+    dhcp4: true
+    optional: true
+    access-points: {}

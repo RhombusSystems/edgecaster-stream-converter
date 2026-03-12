@@ -4,6 +4,7 @@ import type {
   StreamInfo,
   SystemStatus,
   AppSettings,
+  UpdateSchedule,
 } from "./types";
 
 const BASE = "";
@@ -34,6 +35,12 @@ export const setApiKey = (api_key: string) =>
   request<{ ok: boolean }>("/api/settings/api-key", {
     method: "POST",
     body: JSON.stringify({ api_key }),
+  });
+
+export const setUpdateSchedule = (schedule: UpdateSchedule) =>
+  request<{ ok: boolean }>("/api/settings/update-schedule", {
+    method: "PUT",
+    body: JSON.stringify(schedule),
   });
 
 export const refreshDiscovery = () =>
