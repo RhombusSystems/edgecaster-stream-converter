@@ -2,8 +2,8 @@
 # build-image.sh — Build an EdgeCaster SD card image for Raspberry Pi 5
 #
 # Usage:
-#   sudo ./iso/build-image.sh                  # Cloud-init mode (needs internet on first boot)
-#   sudo ./iso/build-image.sh --prebaked       # Pre-baked mode (larger image, no internet needed)
+#   sudo ./image/build-image.sh                  # Cloud-init mode (needs internet on first boot)
+#   sudo ./image/build-image.sh --prebaked       # Pre-baked mode (larger image, no internet needed)
 #
 # Output: edgecaster-<version>.img.xz  (flashable with Pi Imager)
 #
