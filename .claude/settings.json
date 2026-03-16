@@ -1,6 +1,8 @@
 {
   "enabledPlugins": {
     "context7@claude-plugins-official": true,
-    "marketing@rhombus-plugins": true
+    "marketing@rhombus-plugins": true,
+    "claude-md-management@claude-plugins-official": true,
+    "posthog@claude-plugins-official": true
   }
 }
