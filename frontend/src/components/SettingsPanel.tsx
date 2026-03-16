@@ -27,10 +27,11 @@ export default function SettingsPanel() {
     }).catch(() => {});
   }, []);
 
+  const clearMessages = () => { setError(""); setSuccess(""); };
+
   const handleSaveApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    clearMessages();
     setLoading(true);
     try {
       await api.setApiKey(apiKey);
@@ -46,8 +47,7 @@ export default function SettingsPanel() {
 
   const handleSaveUpdateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    clearMessages();
     setLoading(true);
     try {
       await api.setUpdateSchedule({
@@ -71,19 +71,33 @@ export default function SettingsPanel() {
       <h2>Settings</h2>
 
       {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
-      {success && <div className="info-msg" style={{ marginBottom: 12, color: "var(--success)" }}>{success}</div>}
+      {success && <div className="success-msg" style={{ marginBottom: 12 }}>{success}</div>}
 
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Device Info</h3>
-        <p><strong>Hostname:</strong> {settings.hostname}</p>
-        <p><strong>Local IP:</strong> {settings.local_ip}</p>
-        <p><strong>RTSP Port:</strong> {settings.mediamtx_rtsp_port}</p>
-        <p><strong>Max Streams:</strong> {settings.max_streams}</p>
+        <h3>Device Info</h3>
+        <div className="device-info-grid">
+          <div className="device-info-item">
+            <span className="info-label">Hostname</span>
+            <span className="info-value">{settings.hostname}</span>
+          </div>
+          <div className="device-info-item">
+            <span className="info-label">Local IP</span>
+            <span className="info-value">{settings.local_ip}</span>
+          </div>
+          <div className="device-info-item">
+            <span className="info-label">RTSP Port</span>
+            <span className="info-value">{settings.mediamtx_rtsp_port}</span>
+          </div>
+          <div className="device-info-item">
+            <span className="info-label">Max Streams</span>
+            <span className="info-value">{settings.max_streams}</span>
+          </div>
+        </div>
       </div>
 
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Rhombus API Key</h3>
-        <p className="info-msg" style={{ marginBottom: 12 }}>
+        <h3>Rhombus API Key</h3>
+        <p className="info-msg" style={{ marginBottom: 12, marginTop: 0 }}>
           {settings.api_key_configured
             ? "API key is configured."
             : "No API key configured."}
@@ -106,8 +120,8 @@ export default function SettingsPanel() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Auto-Update</h3>
-        <p className="info-msg" style={{ marginBottom: 16 }}>
+        <h3>Auto-Update</h3>
+        <p className="info-msg" style={{ marginBottom: 16, marginTop: 0 }}>
           EdgeCaster checks for updates hourly during the configured window.
         </p>
         <form onSubmit={handleSaveUpdateSchedule}>
@@ -132,14 +146,6 @@ export default function SettingsPanel() {
                 <select
                   value={updateStart}
                   onChange={(e) => setUpdateStart(Number(e.target.value))}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 14,
-                  }}
                 >
                   {HOUR_OPTIONS.map((h) => (
                     <option key={h.value} value={h.value}>{h.label}</option>
@@ -151,14 +157,6 @@ export default function SettingsPanel() {
                 <select
                   value={updateEnd}
                   onChange={(e) => setUpdateEnd(Number(e.target.value))}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 14,
-                  }}
                 >
                   {HOUR_OPTIONS.map((h) => (
                     <option key={h.value} value={h.value}>{h.label}</option>
