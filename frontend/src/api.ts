@@ -6,6 +6,7 @@ import type {
   AppSettings,
   UpdateSchedule,
 } from "./types";
+import { captureException } from "./posthog";
 
 const BASE = "";
 
@@ -20,7 +21,13 @@ async function request<T>(
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(body.detail || `HTTP ${res.status}`);
+    const error = new Error(body.detail || `HTTP ${res.status}`);
+    captureException(error, {
+      api_path: path,
+      status: res.status,
+      method: options?.method || "GET",
+    });
+    throw error;
   }
   return res.json();
 }

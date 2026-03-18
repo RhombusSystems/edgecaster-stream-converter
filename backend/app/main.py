@@ -7,8 +7,9 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.app.config import load_config
@@ -16,6 +17,12 @@ from backend.app.dependencies import init_services, set_rhombus_client
 from backend.app.logging_setup import setup_logging
 from backend.app.routers import auth, cameras, settings, streams, system
 from backend.app.services.discovery import DiscoveryService
+from backend.app.services.posthog_service import (
+    capture_event,
+    capture_exception,
+    init_posthog,
+    shutdown_posthog,
+)
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.services.state_store import StateStore
 from backend.app.services.stream_manager import StreamManager
@@ -31,6 +38,9 @@ async def lifespan(app: FastAPI):
     config = load_config()
     setup_logging(config.log_dir, dev_mode=config.dev_mode)
     logger.info("EdgeCaster starting up (dev_mode=%s)", config.dev_mode)
+
+    # Initialize PostHog telemetry
+    init_posthog(config.posthog_api_key, config.posthog_host)
 
     # Initialize services
     state_store = StateStore(config.state_dir)
@@ -67,6 +77,12 @@ async def lifespan(app: FastAPI):
 
     notify_ready()
     logger.info("EdgeCaster ready")
+    capture_event("device_boot", {
+        "dev_mode": config.dev_mode,
+        "max_streams": config.max_streams,
+        "api_key_configured": bool(config.api_key),
+        "restored_streams": stream_manager.active_count,
+    })
     yield
 
     # Shutdown
@@ -77,6 +93,8 @@ async def lifespan(app: FastAPI):
     await stream_manager.shutdown()
     if rhombus_client:
         await rhombus_client.close()
+    capture_event("device_shutdown")
+    shutdown_posthog()
     logger.info("EdgeCaster shutdown complete")
 
 
@@ -86,6 +104,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+# Global exception handler — report unhandled errors to PostHog
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    capture_exception(exc, {"path": request.url.path, "method": request.method})
+    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 
 # CORS for development
 app.add_middleware(

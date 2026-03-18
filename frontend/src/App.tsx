@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { SetupState } from "./types";
 import * as api from "./api";
+import { initPostHog } from "./posthog";
 import SetupForm from "./components/SetupForm";
 import Dashboard from "./components/Dashboard";
 import CameraList from "./components/CameraList";
@@ -62,6 +63,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    initPostHog();
     checkSetup();
   }, []);
 

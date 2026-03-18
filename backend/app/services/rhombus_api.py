@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from backend.app.models.camera import Camera, CameraStatus
+from backend.app.services.posthog_service import capture_exception
 
 logger = logging.getLogger("edgecaster.rhombus_api")
 
@@ -57,12 +58,16 @@ class RhombusClient:
             return data
         except httpx.HTTPStatusError as e:
             logger.error("Rhombus API HTTP error: %s %s", e.response.status_code, path)
-            raise RhombusAPIError(
+            exc = RhombusAPIError(
                 f"HTTP {e.response.status_code}: {path}", status_code=e.response.status_code
-            ) from e
+            )
+            capture_exception(exc, {"api_path": path, "status_code": e.response.status_code})
+            raise exc from e
         except httpx.RequestError as e:
             logger.error("Rhombus API request error: %s", e)
-            raise RhombusAPIError(f"Request failed: {e}") from e
+            exc = RhombusAPIError(f"Request failed: {e}")
+            capture_exception(exc, {"api_path": path})
+            raise exc from e
 
     async def get_cameras(self) -> list[Camera]:
         """Discover all cameras in the organization."""

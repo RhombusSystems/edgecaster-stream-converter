@@ -35,6 +35,8 @@ class EdgeCasterConfig(BaseModel):
     auto_update_enabled: bool = True
     update_hour_start: int = 2
     update_hour_end: int = 5
+    posthog_api_key: str = ""
+    posthog_host: str = "https://us.i.posthog.com"
 
     # Resolved at load time, not persisted
     config_path: Path = Path(".")
@@ -87,6 +89,8 @@ def save_config(config: EdgeCasterConfig) -> None:
         "auto_update_enabled": config.auto_update_enabled,
         "update_hour_start": config.update_hour_start,
         "update_hour_end": config.update_hour_end,
+        "posthog_api_key": config.posthog_api_key,
+        "posthog_host": config.posthog_host,
     }
     _save_raw_config(config.config_path, data)
 

@@ -16,6 +16,7 @@ from backend.app.dependencies import (
     set_rhombus_client,
 )
 from backend.app.models.settings import AppSettings, SetupState
+from backend.app.services.posthog_service import capture_event
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.utils.network import get_hostname, get_local_ip
 
@@ -104,6 +105,7 @@ async def set_api_key(req: ApiKeyRequest) -> dict:
         logger.warning("Auto-discovery after API key update failed: %s", e)
 
     logger.info("API key updated successfully")
+    capture_event("api_key_configured")
     return {"ok": True}
 
 
@@ -142,4 +144,5 @@ async def refresh_discovery() -> dict:
         )
 
     cameras = await get_discovery().refresh(client)
+    capture_event("discovery_completed", {"camera_count": len(cameras)})
     return {"ok": True, "count": len(cameras)}

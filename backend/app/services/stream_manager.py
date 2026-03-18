@@ -9,7 +9,8 @@ from dataclasses import dataclass, field
 from backend.app.config import EdgeCasterConfig
 from backend.app.models.stream import StreamInfo, StreamState
 from backend.app.services.mediamtx import build_rtsp_playback_url, build_rtsp_publish_url
-from backend.app.services.rhombus_api import RhombusClient, RhombusAPIError
+from backend.app.services.posthog_service import capture_event, capture_exception
+from backend.app.services.rhombus_api import RhombusAPIError, RhombusClient
 from backend.app.services.state_store import StateStore
 from backend.app.utils.network import get_local_ip
 from backend.app.utils.slugify import slugify
@@ -239,6 +240,11 @@ class StreamManager:
             stream.process = process
             stream.state = StreamState.RUNNING
             stream.error_message = ""
+            capture_event("stream_started", {
+                "camera_uuid": stream.camera_uuid,
+                "camera_name": stream.camera_name,
+                "rtsp_slug": stream.rtsp_slug,
+            })
 
             # Start monitoring task
             stream.monitor_task = asyncio.create_task(
@@ -250,14 +256,27 @@ class StreamManager:
             logger.error("Failed to create raw stream for %s: %s", stream.camera_uuid, e)
             stream.state = StreamState.FAILED
             stream.error_message = str(e)
-        except FileNotFoundError:
+            capture_exception(e, {"camera_uuid": stream.camera_uuid, "phase": "create_raw_stream"})
+            capture_event("stream_failed", {
+                "camera_uuid": stream.camera_uuid,
+                "camera_name": stream.camera_name,
+                "error": str(e),
+                "reason": "rhombus_api_error",
+            })
+        except FileNotFoundError as e:
             logger.error("FFmpeg not found. Ensure FFmpeg is installed.")
             stream.state = StreamState.FAILED
             stream.error_message = "FFmpeg not found on system"
+            capture_exception(e, {"camera_uuid": stream.camera_uuid, "phase": "ffmpeg_launch"})
+            capture_event("stream_failed", {
+                "camera_uuid": stream.camera_uuid,
+                "reason": "ffmpeg_not_found",
+            })
         except Exception as e:
             logger.error("Unexpected error starting stream for %s: %s", stream.camera_uuid, e)
             stream.state = StreamState.FAILED
             stream.error_message = str(e)
+            capture_exception(e, {"camera_uuid": stream.camera_uuid, "phase": "stream_launch"})
 
     async def health_check_loop(self) -> None:
         """Periodic health check for all running streams."""
@@ -324,6 +343,13 @@ class StreamManager:
                     stream.camera_name,
                     RECOVERY_BACKOFF_SECONDS,
                 )
+                capture_event("stream_retries_exhausted", {
+                    "camera_uuid": stream.camera_uuid,
+                    "camera_name": stream.camera_name,
+                    "retry_count": stream.retry_count,
+                    "last_exit_code": return_code,
+                    "backoff_seconds": RECOVERY_BACKOFF_SECONDS,
+                })
                 await asyncio.sleep(RECOVERY_BACKOFF_SECONDS)
 
                 if self._shutting_down:
