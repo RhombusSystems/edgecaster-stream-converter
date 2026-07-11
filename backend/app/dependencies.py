@@ -9,6 +9,7 @@ from backend.app.services.health import MetricsCollector
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.services.state_store import StateStore
 from backend.app.services.stream_manager import StreamManager
+from backend.app.services.tunnel import TunnelManager
 
 # Global singletons — initialized during app lifespan
 _config: EdgeCasterConfig | None = None
@@ -18,6 +19,7 @@ _discovery: DiscoveryService | None = None
 _rhombus_client: RhombusClient | None = None
 _alert_manager: AlertManager | None = None
 _metrics_collector: MetricsCollector | None = None
+_tunnel_manager: TunnelManager | None = None
 
 
 def init_services(
@@ -28,9 +30,10 @@ def init_services(
     rhombus_client: RhombusClient | None,
     alert_manager: AlertManager | None = None,
     metrics_collector: MetricsCollector | None = None,
+    tunnel_manager: TunnelManager | None = None,
 ) -> None:
     global _config, _state_store, _stream_manager, _discovery, _rhombus_client
-    global _alert_manager, _metrics_collector
+    global _alert_manager, _metrics_collector, _tunnel_manager
     _config = config
     _state_store = state_store
     _stream_manager = stream_manager
@@ -38,6 +41,7 @@ def init_services(
     _rhombus_client = rhombus_client
     _alert_manager = alert_manager
     _metrics_collector = metrics_collector
+    _tunnel_manager = tunnel_manager
 
 
 def set_rhombus_client(client: RhombusClient | None) -> None:
@@ -77,3 +81,8 @@ def get_alert_manager() -> AlertManager:
 def get_metrics_collector() -> MetricsCollector:
     assert _metrics_collector is not None
     return _metrics_collector
+
+
+def get_tunnel_manager() -> TunnelManager:
+    assert _tunnel_manager is not None
+    return _tunnel_manager

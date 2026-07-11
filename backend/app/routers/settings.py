@@ -14,9 +14,11 @@ from backend.app.dependencies import (
     get_discovery,
     get_rhombus_client,
     get_stream_manager,
+    get_tunnel_manager,
     set_rhombus_client,
 )
 from backend.app.models.settings import AppSettings, SetupState
+from backend.app.services.auth import hash_password
 from backend.app.services.posthog_service import capture_event
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.utils.network import get_hostname, get_local_ip
@@ -42,6 +44,11 @@ class AlertSettingsRequest(BaseModel):
     cpu_alert_threshold: int = 85
     temp_alert_threshold_c: int = 80
     load_alert_threshold: float = 0
+
+
+class PublicCredentialsRequest(BaseModel):
+    username: str
+    password: str
 
 
 @router.get("")
@@ -188,6 +195,84 @@ async def test_alert() -> dict:
             detail="Failed to deliver test alert. Check the webhook URL and device network.",
         )
     return {"ok": True}
+
+
+@router.get("/public-access")
+async def get_public_access() -> dict:
+    """Return public-access (Cloudflare tunnel) status."""
+    return get_tunnel_manager().status()
+
+
+@router.post("/public-access/credentials")
+async def set_public_credentials(req: PublicCredentialsRequest) -> dict:
+    """Set the username/password required to reach the public URL."""
+    username = req.username.strip()
+    if not username or not req.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username and password are both required.",
+        )
+    if len(req.password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters.",
+        )
+    config = get_config()
+    config.auth_username = username
+    config.auth_password_hash = hash_password(req.password)
+    save_config(config)
+    logger.info("Public-access credentials set for user '%s'", username)
+    return {"ok": True}
+
+
+@router.post("/public-access/enable")
+async def enable_public_access() -> dict:
+    """Start the Cloudflare tunnel and return the public URL."""
+    config = get_config()
+    tunnel = get_tunnel_manager()
+
+    if not (config.auth_username and config.auth_password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Set a username and password before enabling public access.",
+        )
+    if not tunnel.is_installed():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="cloudflared is not installed on this device.",
+        )
+
+    config.public_access_enabled = True
+    save_config(config)
+    try:
+        await tunnel.start()
+    except Exception as e:  # noqa: BLE001
+        config.public_access_enabled = False
+        save_config(config)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to start the tunnel: {e}",
+        ) from e
+
+    url = await tunnel.wait_for_url(timeout=25)
+    if not url:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Tunnel started but no public URL yet. Check status in a moment.",
+        )
+    logger.info("Public access enabled: %s", url)
+    return tunnel.status()
+
+
+@router.post("/public-access/disable")
+async def disable_public_access() -> dict:
+    """Stop the Cloudflare tunnel; the device stays reachable on the LAN."""
+    config = get_config()
+    config.public_access_enabled = False
+    save_config(config)
+    await get_tunnel_manager().stop()
+    logger.info("Public access disabled")
+    return get_tunnel_manager().status()
 
 
 @router.post("/discovery/refresh")

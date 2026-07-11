@@ -148,13 +148,12 @@ export default function CameraList() {
   return (
     <div>
       <div className="toolbar">
-        <h2>Cameras</h2>
+        <span className="toolbar-info">
+          {unlimited
+            ? `${activeCount} stream${activeCount === 1 ? "" : "s"} active`
+            : `${activeCount}/${maxStreams} streams active`}
+        </span>
         <div className="toolbar-right">
-          <span className="toolbar-info">
-            {unlimited
-              ? `${activeCount} stream${activeCount === 1 ? "" : "s"} active`
-              : `${activeCount}/${maxStreams} streams active`}
-          </span>
           <button className="btn btn-secondary btn-sm" onClick={handleRefresh}>
             Refresh
           </button>

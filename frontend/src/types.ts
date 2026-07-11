@@ -95,6 +95,21 @@ export interface AlertSettings {
   load_alert_threshold: number;
 }
 
+export interface LogSource {
+  name: string;
+  exists: boolean;
+}
+
+export interface PublicAccessStatus {
+  enabled: boolean;
+  running: boolean;
+  public_url: string;
+  installed: boolean;
+  has_credentials: boolean;
+  username: string;
+  last_error: string;
+}
+
 export interface AuthStatus {
   setup_state: SetupState;
 }

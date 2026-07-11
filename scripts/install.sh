@@ -41,6 +41,24 @@ else
     echo ">>> MediaMTX already installed, skipping"
 fi
 
+# 2b. Install cloudflared (public access via Cloudflare quick tunnels, no account)
+if ! command -v cloudflared &>/dev/null && [ ! -f /usr/local/bin/cloudflared ]; then
+    case "$ARCH" in
+        aarch64|arm64) CF_ARCH="arm64" ;;
+        x86_64|amd64)  CF_ARCH="amd64" ;;
+        armv7l)        CF_ARCH="arm" ;;
+        *)             CF_ARCH="" ;;
+    esac
+    if [ -n "$CF_ARCH" ]; then
+        echo ">>> Installing cloudflared ($CF_ARCH)..."
+        curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" \
+            -o /usr/local/bin/cloudflared && chmod 755 /usr/local/bin/cloudflared \
+            && echo "cloudflared installed" || echo "WARNING: cloudflared download failed (public access will be unavailable)"
+    fi
+else
+    echo ">>> cloudflared already installed, skipping"
+fi
+
 # 3. Install Node.js if not present (for frontend build)
 if ! command -v node &>/dev/null; then
     echo ">>> Installing Node.js..."

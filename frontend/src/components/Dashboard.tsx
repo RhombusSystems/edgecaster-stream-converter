@@ -133,25 +133,16 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h2>Dashboard</h2>
-
       {/* Active Alerts */}
       {status.alerts.length > 0 && (
         <div className="dashboard-section">
           <h3>Active Alerts</h3>
           {status.alerts.map((a) => (
-            <div
-              key={a.type}
-              className="card"
-              style={{
-                borderLeft: `3px solid var(--${a.severity === "critical" ? "danger" : "warning"})`,
-                marginBottom: 8,
-              }}
-            >
-              <strong style={{ color: `var(--${a.severity === "critical" ? "danger" : "warning"})` }}>
-                {a.title}
-              </strong>
-              <div style={{ fontSize: 13, marginTop: 4 }}>{a.message}</div>
+            <div key={a.type} className={`alert-banner ${a.severity === "critical" ? "" : "warn"}`}>
+              <div>
+                <div className="alert-title">{a.title}</div>
+                <div className="alert-msg">{a.message}</div>
+              </div>
             </div>
           ))}
         </div>

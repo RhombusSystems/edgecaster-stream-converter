@@ -6,6 +6,8 @@ import type {
   AppSettings,
   UpdateSchedule,
   AlertSettings,
+  LogSource,
+  PublicAccessStatus,
 } from "./types";
 import { captureException } from "./posthog";
 
@@ -100,3 +102,37 @@ export function subscribeSystemStatus(
   if (onError) es.onerror = onError;
   return es;
 }
+
+// Logs
+export const getLogSources = () =>
+  request<{ sources: LogSource[] }>("/api/logs/sources");
+
+export const getLogs = (source: string, lines = 300) =>
+  request<{ source: string; lines: string[] }>(
+    `/api/logs?source=${encodeURIComponent(source)}&lines=${lines}`
+  );
+
+export function subscribeLogs(source: string, onLine: (line: string) => void): EventSource {
+  const es = new EventSource(
+    `${BASE}/api/logs/stream?source=${encodeURIComponent(source)}`,
+    { withCredentials: true }
+  );
+  es.onmessage = (evt) => { if (evt.data) onLine(evt.data); };
+  return es;
+}
+
+// Public access (Cloudflare tunnel)
+export const getPublicAccess = () =>
+  request<PublicAccessStatus>("/api/settings/public-access");
+
+export const setPublicCredentials = (username: string, password: string) =>
+  request<{ ok: boolean }>("/api/settings/public-access/credentials", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+
+export const enablePublicAccess = () =>
+  request<PublicAccessStatus>("/api/settings/public-access/enable", { method: "POST" });
+
+export const disablePublicAccess = () =>
+  request<PublicAccessStatus>("/api/settings/public-access/disable", { method: "POST" });

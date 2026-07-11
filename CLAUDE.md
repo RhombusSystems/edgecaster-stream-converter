@@ -65,6 +65,13 @@ Core orchestrator managing FFmpeg subprocesses. Maintains in-memory map of `Mana
 - `services/mediamtx.py` — besides URL builders, `get_path_stats()` queries the MediaMTX control API (`127.0.0.1:9997/v3/paths/list`) for per-path liveness/throughput; also enabled in `packaging/mediamtx.yml`.
 - SSE: `GET /api/system/stream` pushes `SystemStatus` (+ active alerts) ~1s; frontend Dashboard subscribes via `EventSource`.
 
+### Live Logs (`services/logs.py`, `routers/logs.py`)
+- Whitelisted sources (`application`/`streams`/`rhombus` → files in `log_dir`). `GET /api/logs` (snapshot), `GET /api/logs/stream` (SSE tail of new lines, handles rotation), `GET /api/logs/sources`. Frontend: Logs sub-tab under Cameras (`CamerasView` → `LogsViewer`, terminal-style).
+
+### Public Access — Cloudflare quick tunnel (`services/tunnel.py`, `services/auth.py`)
+- Zero-credential public URL via `cloudflared tunnel --url http://127.0.0.1:8000` (TryCloudflare `*.trycloudflare.com`; ephemeral URL, no Cloudflare account/token). `TunnelManager` parses the URL from cloudflared output, persists `public_hostname`, restarts on exit, restores on boot if enabled.
+- Auth: LAN = never challenged; public = HTTP Basic auth. The `public_access_auth` middleware in `main.py` gates on the `CF-Connecting-IP` edge header (or Host match) — present only on tunnel traffic. Password stored as pbkdf2 (`services/auth.py`), never plaintext. Endpoints under `/api/settings/public-access/*`. Frontend: `PublicAccessCard` in Settings. `install.sh` installs `cloudflared`.
+
 ### Rhombus API Client (`backend/app/services/rhombus_api.py`)
 - Base URL: `https://api2.rhombussystems.com`
 - Auth headers: `x-auth-scheme: api-token`, `x-auth-apikey: <key>`

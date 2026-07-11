@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AppSettings } from "../types";
 import * as api from "../api";
+import PublicAccessCard from "./PublicAccessCard";
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   const suffix = i < 12 ? "AM" : "PM";
@@ -115,8 +116,6 @@ export default function SettingsPanel() {
 
   return (
     <div>
-      <h2>Settings</h2>
-
       {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
       {success && <div className="success-msg" style={{ marginBottom: 12 }}>{success}</div>}
 
@@ -167,6 +166,8 @@ export default function SettingsPanel() {
           </button>
         </form>
       </div>
+
+      <PublicAccessCard />
 
       <div className="card">
         <h3>Auto-Update</h3>

@@ -57,6 +57,13 @@ class EdgeCasterConfig(BaseModel):
     temp_alert_threshold_c: int = 80  # degrees Celsius
     load_alert_threshold: float = 0  # 1-min load average; 0 = disabled
 
+    # Public access via Cloudflare quick tunnel (no Cloudflare account/token needed).
+    # LAN access never needs a login; the public URL always requires one.
+    public_access_enabled: bool = False
+    public_hostname: str = ""  # <sub>.trycloudflare.com, assigned by Cloudflare
+    auth_username: str = ""
+    auth_password_hash: str = ""  # pbkdf2_sha256$iters$salt$hash (never plaintext)
+
     posthog_api_key: str = ""
     posthog_host: str = "https://us.i.posthog.com"
 
@@ -122,6 +129,10 @@ def save_config(config: EdgeCasterConfig) -> None:
         "cpu_alert_threshold": config.cpu_alert_threshold,
         "temp_alert_threshold_c": config.temp_alert_threshold_c,
         "load_alert_threshold": config.load_alert_threshold,
+        "public_access_enabled": config.public_access_enabled,
+        "public_hostname": config.public_hostname,
+        "auth_username": config.auth_username,
+        "auth_password_hash": config.auth_password_hash,
         "posthog_api_key": config.posthog_api_key,
         "posthog_host": config.posthog_host,
     }

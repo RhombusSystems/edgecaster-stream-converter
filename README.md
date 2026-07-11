@@ -42,7 +42,11 @@ It downloads and installs everything, then tells you the web address to open.
 
 An RTSP link looks like: `rtsp://<device-ip>:8554/front_door`
 
-The dashboard shows live health — active streams, CPU, temperature, and power status — and can **alert you** (via a webhook such as Slack) if a stream drops or the device is under strain. Turn that on under **Settings → Alerts**.
+The dashboard shows live health — active streams, CPU, temperature, and power status — and can **alert you** (via a webhook such as Slack) if a stream drops or the device is under strain. Turn that on under **Settings → Alerts**. Live device logs are under **Cameras → Logs**.
+
+### See it from anywhere (optional)
+
+Under **Settings → Public Access**, set a username and password and click **Turn on public access**. EdgeCaster creates a secure public link (via Cloudflare — no account or setup needed) you can open from any network. On your local network you never need to log in; the public link always asks for that username and password. Turn it off anytime — the device stays reachable on your LAN.
 
 ---
 

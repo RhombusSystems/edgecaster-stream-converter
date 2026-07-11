@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
-import type { SetupState } from "./types";
+import type { SetupState, SystemStatus } from "./types";
 import * as api from "./api";
 import { initPostHog } from "./posthog";
 import SetupForm from "./components/SetupForm";
 import Dashboard from "./components/Dashboard";
-import CameraList from "./components/CameraList";
+import CamerasView from "./components/CamerasView";
 import SettingsPanel from "./components/SettingsPanel";
-import bannerImg from "./media/accelerate-banner 827x192.png";
 import iconImg from "./media/developer-icon-512.png";
 
 type Page = "dashboard" | "cameras" | "settings";
+
+const PAGE_TITLES: Record<Page, string> = {
+  dashboard: "Dashboard",
+  cameras: "Cameras",
+  settings: "Settings",
+};
 
 const NAV_ITEMS: { page: Page; label: string; icon: JSX.Element }[] = [
   {
@@ -46,10 +51,36 @@ const NAV_ITEMS: { page: Page; label: string; icon: JSX.Element }[] = [
   },
 ];
 
+/** Always-visible system pulse in the topbar — its own lightweight SSE. */
+function SystemPulse() {
+  const [status, setStatus] = useState<SystemStatus | null>(null);
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = api.subscribeSystemStatus(setStatus);
+    } catch { /* older browsers — pill stays idle */ }
+    return () => { if (es) es.close(); };
+  }, []);
+
+  const critical = status?.alerts.some((a) => a.severity === "critical") || status?.under_voltage_now;
+  const warning = status?.alerts.some((a) => a.severity === "warning") || status?.throttled_now;
+  const dot = critical ? "danger" : warning ? "warn" : "";
+  const count = status?.active_streams ?? 0;
+
+  return (
+    <div className="pulse-pill" title="Live system status">
+      <span className={`pulse-dot ${dot}`} />
+      <span className="mono">{count}</span>
+      <span className="pill-label">{count === 1 ? "stream live" : "streams live"}</span>
+    </div>
+  );
+}
+
 export default function App() {
   const [setupState, setSetupState] = useState<SetupState>("needs_api_key");
-  const [page, setPage] = useState<Page>("cameras");
+  const [page, setPage] = useState<Page>("dashboard");
   const [checking, setChecking] = useState(true);
+  const [navOpen, setNavOpen] = useState(false);
 
   const checkSetup = async () => {
     try {
@@ -67,9 +98,9 @@ export default function App() {
     checkSetup();
   }, []);
 
-  if (checking) {
-    return <div className="loading">Loading...</div>;
-  }
+  const go = (p: Page) => { setPage(p); setNavOpen(false); };
+
+  if (checking) return <div className="loading">Loading…</div>;
 
   if (setupState !== "ready") {
     return (
@@ -83,42 +114,54 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <header className="top-banner">
-        <img src={bannerImg} alt="" className="top-banner-img" />
-      </header>
-      <div className="app-body">
-        <aside className="sidebar">
-          <div className="sidebar-brand">
-            <img src={iconImg} alt="" className="sidebar-icon" />
-            <div className="sidebar-brand-text">
-              <span className="sidebar-title">EdgeCaster</span>
-              <span className="sidebar-subtitle">Stream Converter</span>
-            </div>
+    <div className={`app ${navOpen ? "nav-open" : ""}`}>
+      <div className="scrim" onClick={() => setNavOpen(false)} />
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <img src={iconImg} alt="" className="sidebar-icon" />
+          <div className="sidebar-brand-text">
+            <span className="sidebar-title">EdgeCaster</span>
+            <span className="sidebar-subtitle">Stream Converter</span>
           </div>
-          <nav>
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.page}
-                href="#"
-                className={page === item.page ? "active" : ""}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPage(item.page);
-                }}
-              >
-                {item.icon}
-                {item.label}
-              </a>
-            ))}
-          </nav>
-          <div className="sidebar-footer">
-            Made by Rhombus Developers with &#10084;&#65039; in Sacramento
-          </div>
-        </aside>
-        <main className="main-content">
+        </div>
+        <nav>
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item.page}
+              href="#"
+              className={page === item.page ? "active" : ""}
+              onClick={(e) => { e.preventDefault(); go(item.page); }}
+            >
+              {item.icon}
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          Made by Rhombus Developers with &#10084;&#65039; in Sacramento
+        </div>
+      </aside>
+
+      <div className="main-content">
+        <header className="topbar">
+          <button
+            className="nav-toggle"
+            aria-label="Toggle navigation"
+            onClick={() => setNavOpen((v) => !v)}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <h1>{PAGE_TITLES[page]}</h1>
+          <div className="topbar-spacer" />
+          <SystemPulse />
+        </header>
+        <main className="page">
           {page === "dashboard" && <Dashboard />}
-          {page === "cameras" && <CameraList />}
+          {page === "cameras" && <CamerasView />}
           {page === "settings" && <SettingsPanel />}
         </main>
       </div>
