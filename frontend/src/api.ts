@@ -5,6 +5,7 @@ import type {
   SystemStatus,
   AppSettings,
   UpdateSchedule,
+  AlertSettings,
 } from "./types";
 import { captureException } from "./posthog";
 
@@ -50,6 +51,15 @@ export const setUpdateSchedule = (schedule: UpdateSchedule) =>
     body: JSON.stringify(schedule),
   });
 
+export const setAlertSettings = (alerts: AlertSettings) =>
+  request<{ ok: boolean }>("/api/settings/alerts", {
+    method: "PUT",
+    body: JSON.stringify(alerts),
+  });
+
+export const testAlert = () =>
+  request<{ ok: boolean }>("/api/settings/alerts/test", { method: "POST" });
+
 export const refreshDiscovery = () =>
   request<{ ok: boolean; count: number }>("/api/settings/discovery/refresh", {
     method: "POST",
@@ -72,3 +82,21 @@ export const disableStream = (cameraUuid: string) =>
 // System
 export const getSystemStatus = () =>
   request<SystemStatus>("/api/system/status");
+
+// Live system metrics over Server-Sent Events. Returns the EventSource so the
+// caller can close it on unmount. onStatus fires on each pushed snapshot.
+export function subscribeSystemStatus(
+  onStatus: (status: SystemStatus) => void,
+  onError?: () => void
+): EventSource {
+  const es = new EventSource(`${BASE}/api/system/stream`, { withCredentials: true });
+  es.onmessage = (evt) => {
+    try {
+      onStatus(JSON.parse(evt.data) as SystemStatus);
+    } catch {
+      /* ignore malformed frame */
+    }
+  };
+  if (onError) es.onerror = onError;
+  return es;
+}

@@ -18,12 +18,25 @@ export default function SettingsPanel() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Alerting
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [cpuThreshold, setCpuThreshold] = useState(85);
+  const [tempThreshold, setTempThreshold] = useState(80);
+  const [loadThreshold, setLoadThreshold] = useState(0);
+  const [testing, setTesting] = useState(false);
+
   useEffect(() => {
     api.getSettings().then((s) => {
       setSettings(s);
       setAutoUpdateEnabled(s.auto_update_enabled);
       setUpdateStart(s.update_hour_start);
       setUpdateEnd(s.update_hour_end);
+      setAlertsEnabled(s.alerts_enabled);
+      setWebhookUrl(s.alert_webhook_url);
+      setCpuThreshold(s.cpu_alert_threshold);
+      setTempThreshold(s.temp_alert_threshold_c);
+      setLoadThreshold(s.load_alert_threshold);
     }).catch(() => {});
   }, []);
 
@@ -64,6 +77,40 @@ export default function SettingsPanel() {
     }
   };
 
+  const handleSaveAlerts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearMessages();
+    setLoading(true);
+    try {
+      await api.setAlertSettings({
+        alerts_enabled: alertsEnabled,
+        alert_webhook_url: webhookUrl,
+        cpu_alert_threshold: cpuThreshold,
+        temp_alert_threshold_c: tempThreshold,
+        load_alert_threshold: loadThreshold,
+      });
+      setSuccess("Alert settings saved.");
+      setSettings(await api.getSettings());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save alert settings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestAlert = async () => {
+    clearMessages();
+    setTesting(true);
+    try {
+      await api.testAlert();
+      setSuccess("Test alert sent to the webhook.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send test alert");
+    } finally {
+      setTesting(false);
+    }
+  };
+
   if (!settings) return <div className="loading">Loading...</div>;
 
   return (
@@ -90,7 +137,9 @@ export default function SettingsPanel() {
           </div>
           <div className="device-info-item">
             <span className="info-label">Max Streams</span>
-            <span className="info-value">{settings.max_streams}</span>
+            <span className="info-value">
+              {settings.max_streams === 0 ? "Unlimited" : settings.max_streams}
+            </span>
           </div>
         </div>
       </div>
@@ -169,6 +218,87 @@ export default function SettingsPanel() {
           <button className="btn btn-primary" disabled={loading}>
             {loading ? "Saving..." : "Save Schedule"}
           </button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h3>Alerts</h3>
+        <p className="info-msg" style={{ marginBottom: 16, marginTop: 0 }}>
+          Send a LAN alert to a webhook (Slack incoming webhook, Make.com, or any
+          HTTP listener) when a stream drops, the Pi is power/thermally constrained,
+          or CPU/load stays high.
+        </p>
+        <form onSubmit={handleSaveAlerts}>
+          <div className="form-group" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <label className="toggle" style={{ marginBottom: 0 }}>
+              <input
+                type="checkbox"
+                checked={alertsEnabled}
+                onChange={(e) => setAlertsEnabled(e.target.checked)}
+              />
+              <span className="slider" />
+            </label>
+            <span style={{ fontSize: 14 }}>
+              {alertsEnabled ? "Alerts enabled" : "Alerts disabled"}
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label>Webhook URL</label>
+            <input
+              type="text"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 16 }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>CPU alert (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={cpuThreshold}
+                onChange={(e) => setCpuThreshold(Number(e.target.value))}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Temp alert (°C)</label>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                value={tempThreshold}
+                onChange={(e) => setTempThreshold(Number(e.target.value))}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Load alert (0=off)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={loadThreshold}
+                onChange={(e) => setLoadThreshold(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn btn-primary" disabled={loading}>
+              {loading ? "Saving..." : "Save Alerts"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={testing || !webhookUrl}
+              onClick={handleTestAlert}
+            >
+              {testing ? "Sending..." : "Send test alert"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

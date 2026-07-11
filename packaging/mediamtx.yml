@@ -8,10 +8,29 @@ logLevel: info
 logDestinations: [stdout]
 
 ###############################################
+# Control API (localhost only -> no auth required)
+# Used by EdgeCaster for per-path liveness/throughput metrics.
+
+api: yes
+apiAddress: 127.0.0.1:9997
+
+###############################################
+# Timeouts (low-latency + fast recovery)
+# readTimeout drops a stalled publisher (FFmpeg) quickly so recovery can fire.
+
+readTimeout: 5s
+writeTimeout: 10s
+# writeQueueSize: default (512). A larger queue does NOT lower latency; it only
+# buffers more before dropping a slow reader. Each reader has its own queue, so
+# a slow consumer cannot add latency to the publisher or to other readers.
+
+###############################################
 # RTSP server
 
 rtsp: yes
 rtspAddress: :8554
+# NOTE: MediaMTX renamed this key to "rtspTransports" in v1.11+. On the shipped
+# v1.9.3 the key is "protocols". Update if the bundled binary is upgraded.
 protocols: [tcp, udp]
 
 # Allow publishing from localhost (FFmpeg)

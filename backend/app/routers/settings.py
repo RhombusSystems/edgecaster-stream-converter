@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from backend.app.config import save_config
 from backend.app.dependencies import (
+    get_alert_manager,
     get_config,
     get_discovery,
     get_rhombus_client,
@@ -35,6 +36,14 @@ class UpdateScheduleRequest(BaseModel):
     update_hour_end: int
 
 
+class AlertSettingsRequest(BaseModel):
+    alerts_enabled: bool
+    alert_webhook_url: str = ""
+    cpu_alert_threshold: int = 85
+    temp_alert_threshold_c: int = 80
+    load_alert_threshold: float = 0
+
+
 @router.get("")
 async def get_settings() -> AppSettings:
     """Return current application settings (no secrets)."""
@@ -55,6 +64,11 @@ async def get_settings() -> AppSettings:
         auto_update_enabled=config.auto_update_enabled,
         update_hour_start=config.update_hour_start,
         update_hour_end=config.update_hour_end,
+        alerts_enabled=config.alerts_enabled,
+        alert_webhook_url=config.alert_webhook_url,
+        cpu_alert_threshold=config.cpu_alert_threshold,
+        temp_alert_threshold_c=config.temp_alert_threshold_c,
+        load_alert_threshold=config.load_alert_threshold,
     )
 
 
@@ -130,6 +144,49 @@ async def set_update_schedule(req: UpdateScheduleRequest) -> dict:
         config.update_hour_start,
         config.update_hour_end,
     )
+    return {"ok": True}
+
+
+@router.put("/alerts")
+async def set_alert_settings(req: AlertSettingsRequest) -> dict:
+    """Configure LAN webhook alerting and thresholds."""
+    if min(req.cpu_alert_threshold, req.temp_alert_threshold_c, req.load_alert_threshold) < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Thresholds must be non-negative.",
+        )
+
+    config = get_config()
+    config.alerts_enabled = req.alerts_enabled
+    config.alert_webhook_url = req.alert_webhook_url.strip()
+    config.cpu_alert_threshold = req.cpu_alert_threshold
+    config.temp_alert_threshold_c = req.temp_alert_threshold_c
+    config.load_alert_threshold = req.load_alert_threshold
+    save_config(config)
+
+    logger.info(
+        "Alert settings updated: enabled=%s, webhook=%s",
+        config.alerts_enabled,
+        "set" if config.alert_webhook_url else "unset",
+    )
+    return {"ok": True}
+
+
+@router.post("/alerts/test")
+async def test_alert() -> dict:
+    """Send a test alert to the configured webhook."""
+    config = get_config()
+    if not config.alert_webhook_url.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No webhook URL configured. Save a webhook URL first.",
+        )
+    ok = await get_alert_manager().send_test()
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to deliver test alert. Check the webhook URL and device network.",
+        )
     return {"ok": True}
 
 

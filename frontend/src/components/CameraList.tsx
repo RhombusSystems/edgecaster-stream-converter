@@ -35,7 +35,8 @@ export default function CameraList() {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
-  const maxStreams = settings?.max_streams ?? 10;
+  const maxStreams = settings?.max_streams ?? 0;
+  const unlimited = maxStreams === 0;
 
   const load = useCallback(async () => {
     try {
@@ -99,7 +100,7 @@ export default function CameraList() {
   };
 
   const activeCount = cameras.filter((c) => c.rtsp_enabled).length;
-  const maxReached = activeCount >= maxStreams;
+  const maxReached = !unlimited && activeCount >= maxStreams;
 
   // Counts for filter pills
   const counts = useMemo(() => {
@@ -150,7 +151,9 @@ export default function CameraList() {
         <h2>Cameras</h2>
         <div className="toolbar-right">
           <span className="toolbar-info">
-            {activeCount}/{maxStreams} streams active
+            {unlimited
+              ? `${activeCount} stream${activeCount === 1 ? "" : "s"} active`
+              : `${activeCount}/${maxStreams} streams active`}
           </span>
           <button className="btn btn-secondary btn-sm" onClick={handleRefresh}>
             Refresh

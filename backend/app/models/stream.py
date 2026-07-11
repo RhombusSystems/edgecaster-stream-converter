@@ -25,3 +25,6 @@ class StreamInfo(BaseModel):
     state: StreamState = StreamState.STOPPED
     error_message: str = ""
     lan_video_url: str = ""
+    # Live throughput/reader stats (from the MediaMTX control API)
+    throughput_kbps: float = 0
+    readers: int = 0

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from backend.app.config import EdgeCasterConfig
+from backend.app.services.alerts import AlertManager
 from backend.app.services.discovery import DiscoveryService
+from backend.app.services.health import MetricsCollector
 from backend.app.services.rhombus_api import RhombusClient
 from backend.app.services.state_store import StateStore
 from backend.app.services.stream_manager import StreamManager
@@ -14,6 +16,8 @@ _state_store: StateStore | None = None
 _stream_manager: StreamManager | None = None
 _discovery: DiscoveryService | None = None
 _rhombus_client: RhombusClient | None = None
+_alert_manager: AlertManager | None = None
+_metrics_collector: MetricsCollector | None = None
 
 
 def init_services(
@@ -22,13 +26,18 @@ def init_services(
     stream_manager: StreamManager,
     discovery: DiscoveryService,
     rhombus_client: RhombusClient | None,
+    alert_manager: AlertManager | None = None,
+    metrics_collector: MetricsCollector | None = None,
 ) -> None:
     global _config, _state_store, _stream_manager, _discovery, _rhombus_client
+    global _alert_manager, _metrics_collector
     _config = config
     _state_store = state_store
     _stream_manager = stream_manager
     _discovery = discovery
     _rhombus_client = rhombus_client
+    _alert_manager = alert_manager
+    _metrics_collector = metrics_collector
 
 
 def set_rhombus_client(client: RhombusClient | None) -> None:
@@ -58,3 +67,13 @@ def get_discovery() -> DiscoveryService:
 
 def get_rhombus_client() -> RhombusClient | None:
     return _rhombus_client
+
+
+def get_alert_manager() -> AlertManager:
+    assert _alert_manager is not None
+    return _alert_manager
+
+
+def get_metrics_collector() -> MetricsCollector:
+    assert _metrics_collector is not None
+    return _metrics_collector

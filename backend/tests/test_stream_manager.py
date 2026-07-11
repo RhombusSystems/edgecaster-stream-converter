@@ -65,6 +65,7 @@ async def test_start_stream_persists_enabled(manager, tmp_state):
     with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
         mock_process = AsyncMock()
         mock_process.wait = AsyncMock(return_value=0)
+        mock_process.stdout = None
         mock_process.stderr = None
         mock_proc.return_value = mock_process
 
@@ -72,6 +73,33 @@ async def test_start_stream_persists_enabled(manager, tmp_state):
 
     assert "cam1" in tmp_state.get_enabled_cameras()
     assert tmp_state.get_slug_map().get("cam1") == "front_door"
+
+
+@pytest.mark.asyncio
+async def test_unlimited_streams_when_max_is_zero(tmp_state):
+    """max_streams=0 means unlimited — enabling beyond the old cap must not raise."""
+    config = EdgeCasterConfig(max_streams=0, mediamtx_rtsp_port=8554, mediamtx_host="127.0.0.1")
+    manager = StreamManager(config, tmp_state)
+
+    # Pre-fill well beyond the historical 10-stream limit.
+    tmp_state.set_enabled_cameras({f"cam{i}" for i in range(15)})
+
+    mock_client = AsyncMock()
+    mock_client.create_raw_stream = AsyncMock(return_value="http://fake/video")
+    manager.set_rhombus_client(mock_client)
+
+    with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+        mock_process = AsyncMock()
+        mock_process.wait = AsyncMock(return_value=0)
+        mock_process.stdout = None
+        mock_process.stderr = None
+        mock_proc.return_value = mock_process
+
+        # Should not raise despite 15 already enabled.
+        info = await manager.start_stream("cam-new", "Camera New")
+
+    assert "cam-new" in tmp_state.get_enabled_cameras()
+    assert info.camera_uuid == "cam-new"
 
 
 @pytest.mark.asyncio

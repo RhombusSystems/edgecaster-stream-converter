@@ -58,6 +58,12 @@ else
     echo ">>> Service user $SERVICE_USER already exists"
 fi
 
+# Grant access to vcgencmd (Raspberry Pi throttle/under-voltage metrics), which
+# requires membership in the 'video' group. Harmless if the group is absent.
+if getent group video &>/dev/null; then
+    usermod -aG video "$SERVICE_USER" || true
+fi
+
 # 5. Create directories
 echo ">>> Creating directories..."
 mkdir -p "$CONFIG_DIR" "$STATE_DIR" "$LOG_DIR" "$INSTALL_DIR"

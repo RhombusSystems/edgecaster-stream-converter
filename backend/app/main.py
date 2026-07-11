@@ -13,10 +13,13 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.app.config import load_config
-from backend.app.dependencies import init_services, set_rhombus_client
+from backend.app.dependencies import init_services
 from backend.app.logging_setup import setup_logging
 from backend.app.routers import auth, cameras, settings, streams, system
+from backend.app.services.alerts import AlertManager
 from backend.app.services.discovery import DiscoveryService
+from backend.app.services.health import MetricsCollector
+from backend.app.services.mediamtx import get_path_stats
 from backend.app.services.posthog_service import (
     capture_event,
     capture_exception,
@@ -29,6 +32,42 @@ from backend.app.services.stream_manager import StreamManager
 from backend.app.services.watchdog import notify_ready, notify_stopping, watchdog_loop
 
 logger = logging.getLogger("edgecaster")
+
+METRICS_INTERVAL = 2  # seconds between metric samples / MediaMTX polls / alert evals
+
+
+async def metrics_loop(
+    config,
+    stream_manager: StreamManager,
+    discovery: DiscoveryService,
+    collector: MetricsCollector,
+    alert_manager: AlertManager,
+) -> None:
+    """Single sampler feeding the SSE stream and the alert evaluator."""
+    while True:
+        try:
+            # Per-stream throughput/liveness from the MediaMTX control API.
+            path_stats = await get_path_stats(
+                config.mediamtx_api_host, config.mediamtx_api_port
+            )
+            if path_stats:
+                stream_manager.apply_path_stats(path_stats)
+
+            status = await collector.sample(
+                total_cameras=len(discovery.cameras),
+                active_streams=stream_manager.active_count,
+                max_streams=config.max_streams,
+                alerts=None,
+            )
+            await alert_manager.evaluate_system(status)
+            # Reflect current active alerts in the cached snapshot (same object
+            # stored as collector.latest, so the SSE stream sees them).
+            status.alerts = alert_manager.get_active()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001 - metrics must never crash the app
+            logger.debug("metrics loop iteration failed: %s", e)
+        await asyncio.sleep(METRICS_INTERVAL)
 
 
 @asynccontextmanager
@@ -46,6 +85,9 @@ async def lifespan(app: FastAPI):
     state_store = StateStore(config.state_dir)
     discovery = DiscoveryService()
     stream_manager = StreamManager(config, state_store)
+    alert_manager = AlertManager(config)
+    metrics_collector = MetricsCollector()
+    stream_manager.set_alert_manager(alert_manager)
 
     # Initialize Rhombus client if API key is configured
     rhombus_client: RhombusClient | None = None
@@ -67,12 +109,24 @@ async def lifespan(app: FastAPI):
             logger.error("Stream restoration failed: %s", e)
 
     # Register singletons for dependency injection
-    init_services(config, state_store, stream_manager, discovery, rhombus_client)
+    init_services(
+        config,
+        state_store,
+        stream_manager,
+        discovery,
+        rhombus_client,
+        alert_manager,
+        metrics_collector,
+    )
 
     # Start background tasks
     watchdog_task = asyncio.create_task(watchdog_loop(), name="watchdog")
     health_task = asyncio.create_task(
         stream_manager.health_check_loop(), name="health-check"
+    )
+    metrics_task = asyncio.create_task(
+        metrics_loop(config, stream_manager, discovery, metrics_collector, alert_manager),
+        name="metrics",
     )
 
     notify_ready()
@@ -90,6 +144,7 @@ async def lifespan(app: FastAPI):
     logger.info("EdgeCaster shutting down")
     watchdog_task.cancel()
     health_task.cancel()
+    metrics_task.cancel()
     await stream_manager.shutdown()
     if rhombus_client:
         await rhombus_client.close()

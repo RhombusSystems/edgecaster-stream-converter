@@ -28,13 +28,35 @@ class EdgeCasterConfig(BaseModel):
     """Runtime configuration loaded from YAML."""
 
     api_key: str = ""
-    max_streams: int = 10
+    # 0 = unlimited (run as many streams as the device can handle).
+    # A positive value acts as an optional hard safety ceiling.
+    max_streams: int = 0
     mediamtx_rtsp_port: int = 8554
     mediamtx_host: str = "127.0.0.1"
+    mediamtx_api_host: str = "127.0.0.1"
+    mediamtx_api_port: int = 9997
     ffmpeg_loglevel: str = "warning"
+
+    # Low-latency FFmpeg tuning (on-device tunable without a code change)
+    ffmpeg_probesize: int = 500000  # bytes; lower = faster start, too low fails SPS/PPS detection
+    ffmpeg_analyzeduration: int = 1000000  # microseconds
+    ffmpeg_rw_timeout: int = 5000000  # microseconds; abort input if no data for this long
+
+    # Frame-level stall detection: restart a stream whose output has not
+    # advanced for this many seconds (independent of process liveness).
+    stall_threshold_seconds: int = 6
+
     auto_update_enabled: bool = True
     update_hour_start: int = 2
     update_hour_end: int = 5
+
+    # LAN alerting (generic webhook: Slack/Make/custom listener)
+    alerts_enabled: bool = False
+    alert_webhook_url: str = ""
+    cpu_alert_threshold: int = 85  # percent, sustained
+    temp_alert_threshold_c: int = 80  # degrees Celsius
+    load_alert_threshold: float = 0  # 1-min load average; 0 = disabled
+
     posthog_api_key: str = ""
     posthog_host: str = "https://us.i.posthog.com"
 
@@ -85,10 +107,21 @@ def save_config(config: EdgeCasterConfig) -> None:
         "max_streams": config.max_streams,
         "mediamtx_rtsp_port": config.mediamtx_rtsp_port,
         "mediamtx_host": config.mediamtx_host,
+        "mediamtx_api_host": config.mediamtx_api_host,
+        "mediamtx_api_port": config.mediamtx_api_port,
         "ffmpeg_loglevel": config.ffmpeg_loglevel,
+        "ffmpeg_probesize": config.ffmpeg_probesize,
+        "ffmpeg_analyzeduration": config.ffmpeg_analyzeduration,
+        "ffmpeg_rw_timeout": config.ffmpeg_rw_timeout,
+        "stall_threshold_seconds": config.stall_threshold_seconds,
         "auto_update_enabled": config.auto_update_enabled,
         "update_hour_start": config.update_hour_start,
         "update_hour_end": config.update_hour_end,
+        "alerts_enabled": config.alerts_enabled,
+        "alert_webhook_url": config.alert_webhook_url,
+        "cpu_alert_threshold": config.cpu_alert_threshold,
+        "temp_alert_threshold_c": config.temp_alert_threshold_c,
+        "load_alert_threshold": config.load_alert_threshold,
         "posthog_api_key": config.posthog_api_key,
         "posthog_host": config.posthog_host,
     }

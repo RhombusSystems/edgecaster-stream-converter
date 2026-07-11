@@ -4,17 +4,40 @@
 # Rhombus Org API Key (set via the web UI)
 api_key: ""
 
-# Maximum concurrent RTSP streams (protects Pi CPU)
-max_streams: 10
+# Maximum concurrent RTSP streams.
+# 0 = unlimited (run as many as the device can handle; strain/power/thermal
+# alerts warn you as capacity is reached). A positive value is an optional
+# hard safety ceiling.
+max_streams: 0
 
 # MediaMTX RTSP settings
 mediamtx_rtsp_port: 8554
 mediamtx_host: "127.0.0.1"
 
+# MediaMTX control API (localhost only) — used for per-stream liveness/throughput
+mediamtx_api_host: "127.0.0.1"
+mediamtx_api_port: 9997
+
 # FFmpeg log level: quiet, panic, fatal, error, warning, info, verbose, debug
 ffmpeg_loglevel: "warning"
+
+# Low-latency FFmpeg tuning (advanced; defaults target sub-second latency)
+ffmpeg_probesize: 500000          # bytes; lower = faster start
+ffmpeg_analyzeduration: 1000000   # microseconds
+ffmpeg_rw_timeout: 5000000        # microseconds; abort input if no data for this long
+
+# Restart a stream whose output has not advanced for this many seconds
+stall_threshold_seconds: 6
 
 # Auto-update settings
 auto_update_enabled: true
 update_hour_start: 2   # 2:00 AM
 update_hour_end: 5     # 5:00 AM
+
+# LAN alerting via generic webhook (Slack incoming webhook, Make.com, or any
+# HTTP listener). Configure via the web UI or here.
+alerts_enabled: false
+alert_webhook_url: ""
+cpu_alert_threshold: 85       # percent, sustained
+temp_alert_threshold_c: 80    # degrees Celsius
+load_alert_threshold: 0       # 1-min load average; 0 = disabled
