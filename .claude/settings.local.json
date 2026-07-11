@@ -21,7 +21,8 @@
       "Skill(marketing:brand-guide:*)",
       "Bash(python3 -m pytest backend/tests/ -v)",
       "Bash(./venv/bin/python -m pytest backend/tests/ -v)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(git pull *)"
     ]
   }
 }
