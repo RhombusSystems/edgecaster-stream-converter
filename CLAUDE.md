@@ -91,7 +91,7 @@ Two separate stores:
 4. Signal `READY=1` to systemd
 
 ### Authentication
-No HTTP-level auth on API endpoints. Security relies on network isolation (trusted LAN). The only "auth" is the Rhombus Org API Key stored in plaintext in config.yaml.
+LAN access has no login — security relies on network isolation (trusted LAN). The Rhombus Org API Key is stored in plaintext in config.yaml. The ONLY authenticated path is public access: when the Cloudflare tunnel is on, the `public_access_auth` middleware challenges tunnel traffic (identified by the `CF-Connecting-IP` edge header) with HTTP Basic auth against a pbkdf2-hashed credential; LAN traffic is still never challenged. See the Public Access subsystem above.
 
 ## Important Notes
 

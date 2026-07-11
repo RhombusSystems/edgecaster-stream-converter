@@ -8,6 +8,15 @@ EdgeCaster is a small box (a Raspberry Pi, mini-PC, or Linux VM) that pulls vide
 Rhombus Cameras  →  EdgeCaster  →  RTSP streams  →  Your VMS / NVR / AI system
 ```
 
+**What you get**
+
+- **Sub-second latency**, always-latest-frame restreaming (no transcoding)
+- **As many streams as your device can handle** — no fixed limit
+- **Self-healing 24/7** — dropped or frozen streams are detected and re-fetched automatically
+- **Live dashboard** — streams, throughput, CPU, temperature, and power status in real time
+- **Alerts** to a webhook (e.g. Slack) when a stream drops or the device is strained
+- **Live logs** and optional **secure public access** from anywhere
+
 ---
 
 ## Install it
@@ -124,6 +133,7 @@ ruff check backend/ && (cd frontend && npx tsc --noEmit)
 - The API key is stored in `/etc/edgecaster/config.yaml` (not world-readable) and is never logged.
 - Auto-updates use git fast-forward pulls during a configurable nightly window (default 2–5 AM), set under Settings or in `config.yaml`.
 - **Raspberry Pi temperature / power-throttle metrics need the Pi kernel.** On Ubuntu, install it with `sudo apt-get install -y linux-raspi && sudo reboot`. The default `-generic`/`virtual` kernel exposes no thermal sensors, so those tiles show "N/A" (everything else still works).
+- **Public access** uses a Cloudflare quick tunnel (no Cloudflare account/token). The public link is protected by the username/password you set, but it exposes camera controls — use a strong password and turn it off when unused. The link is ephemeral (it changes each time public access restarts). Needs `cloudflared`, which `install.sh` installs.
 
 </details>
 
