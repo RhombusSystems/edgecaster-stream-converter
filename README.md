@@ -1,272 +1,126 @@
 # EdgeCaster
 
-A lightweight edge gateway that converts **Rhombus Secure Raw Streams** into **RTSP streams** using **MediaMTX**.
+**Turn your Rhombus cameras into standard RTSP streams** that any VMS, NVR, or AI/video system can use — with sub-second latency.
 
-EdgeCaster runs on a Raspberry Pi 5 and allows legacy VMS, NVR, and third-party AI/video systems that require RTSP to consume video from Rhombus cameras.
-
-## Architecture
+EdgeCaster is a small box (a Raspberry Pi, mini-PC, or Linux VM) that pulls video from your Rhombus cameras and re-broadcasts it as RTSP on your local network. Set it up once from a simple web page; it then runs 24/7 and heals itself if a stream drops.
 
 ```
-Rhombus Camera
-     │
-     │ Secure Raw Stream (HTTPS H264)
-     ▼
-EdgeCaster (FFmpeg pull)
-     │
-     ▼
-MediaMTX (RTSP server)
-     │
-     ▼
-External Systems (VMS / NVR / AI)
+Rhombus Cameras  →  EdgeCaster  →  RTSP streams  →  Your VMS / NVR / AI system
 ```
 
-## Features
+---
 
-- Automatic camera discovery via Rhombus API
-- Simple web UI for enabling/disabling RTSP streams
-- Up to 10 concurrent streams (stream copy, no transcoding)
-- Automatic stream recovery on failure with configurable retry logic
-- Persistent stream state across reboots
-- Systemd-native deployment with watchdog integration
-- Automatic updates via configurable nightly window
-- Raspberry Pi SD card image builder
+## Install it
 
-## Hardware Requirements
+Pick whichever is easier for you.
 
-| Component | Requirement |
-|-----------|-------------|
-| Device | Raspberry Pi 5 |
-| RAM | 8GB recommended |
-| Storage | 32GB SD minimum |
-| Network | Gigabit Ethernet |
-| OS | Ubuntu Server 24.04 |
+### Option A — Ready-to-use Raspberry Pi (easiest, no typing)
 
-## Quick Start
+1. Ask Rhombus for the EdgeCaster SD-card image, or [build one](#build-a-raspberry-pi-image).
+2. Flash it to an SD card with the free [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
+3. Put the card in a **Raspberry Pi 5**, connect it to your network with an Ethernet cable, and power it on.
+4. Wait a few minutes, then open **http://edgecaster.local** in a web browser.
 
-### 1. Install
+### Option B — One command on any Linux machine
 
+On a machine running **Ubuntu or Debian** (Raspberry Pi, mini-PC, or virtual machine), open a terminal and paste this single line:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RhombusSystems/edgecaster-stream-converter/main/scripts/bootstrap.sh | sudo bash
+```
+
+It downloads and installs everything, then tells you the web address to open.
+
+---
+
+## Set it up (2 minutes)
+
+1. Open EdgeCaster in a web browser (**http://edgecaster.local** or `http://<device-ip>`).
+2. Paste your **Rhombus Org API Key**. Your cameras appear automatically.
+3. Flip the switch next to any camera to start streaming.
+4. Copy that camera's **RTSP link** and paste it into your VMS, NVR, or AI system. Done.
+
+An RTSP link looks like: `rtsp://<device-ip>:8554/front_door`
+
+The dashboard shows live health — active streams, CPU, temperature, and power status — and can **alert you** (via a webhook such as Slack) if a stream drops or the device is under strain. Turn that on under **Settings → Alerts**.
+
+---
+
+## Need help?
+
+**Email [support@rhombus.com](mailto:support@rhombus.com)** and we'll help you get set up. It helps to include what you were doing and anything shown on the dashboard.
+
+---
+
+<details>
+<summary><b>Advanced & developer notes</b> (click to expand)</summary>
+
+### What you need
+- A **Raspberry Pi 5** (8 GB RAM recommended) or any Ubuntu/Debian machine (arm64 or x86-64)
+- Wired Gigabit network
+- A Rhombus **Org API Key**
+
+### How it works
+Rhombus cameras expose a Secure Raw Stream (H264 over HTTPS). EdgeCaster pulls each one with FFmpeg (stream copy — no transcoding, so it's light and low-latency) and publishes it to a built-in [MediaMTX](https://github.com/bluenviron/mediamtx) RTSP server on port 8554. There's no fixed stream limit — the device runs as many as its network and CPU allow.
+
+For sub-second latency it strips buffering at every hop, and a per-stream watchdog detects a frozen feed and automatically re-fetches it, so it keeps running 24/7.
+
+### Common commands (on the device)
+```bash
+# Service status and live logs
+sudo systemctl status edgecaster mediamtx
+journalctl -u edgecaster -f
+
+# Update now (also runs nightly on its own)
+sudo bash /opt/edgecaster/scripts/edgecaster-update.sh
+
+# Uninstall
+sudo bash /opt/edgecaster/scripts/uninstall.sh
+```
+
+### Key locations & ports
+| What | Where |
+|------|-------|
+| Configuration | `/etc/edgecaster/config.yaml` |
+| Saved state | `/var/lib/edgecaster/state.json` |
+| Logs | `/var/log/edgecaster/` |
+| Web UI | port 80 · RTSP | port 8554 |
+
+### Install from a git checkout
 ```bash
 git clone https://github.com/RhombusSystems/edgecaster-stream-converter.git
 cd edgecaster-stream-converter
 sudo bash scripts/install.sh
 ```
 
-### 2. Configure
-
-Open `http://<device-ip>` in a browser:
-
-1. Enter your Rhombus Org API Key
-2. Cameras are discovered automatically
-3. Toggle cameras to start RTSP streams
-
-### 3. Connect
-
-Point your VMS/NVR to the RTSP streams:
-
-```
-rtsp://<device-ip>:8554/front_door
-rtsp://<device-ip>:8554/warehouse
-rtsp://<device-ip>:8554/parking_lot
-```
-
-## Raspberry Pi Image
-
-You can build a ready-to-flash SD card image instead of installing manually:
-
+### Build a Raspberry Pi image
 ```bash
-# Cloud-init mode (smaller image, needs internet on first boot)
-sudo bash image/build-image.sh
-
-# Pre-baked mode (larger image, no internet needed on first boot)
-sudo bash image/build-image.sh --prebaked
+sudo bash image/build-image.sh              # smaller, needs internet on first boot
+sudo bash image/build-image.sh --prebaked   # larger, no internet needed on first boot
 ```
+Output is a flashable `.img.xz`. First boot sets the hostname to `edgecaster`, creates the `edgecaster` user (default password `edgecaster` — change it), and starts all services.
 
-The output is a compressed `.img.xz` file. Flash it to an SD card with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or `dd`.
-
-On first boot the device will:
-- Set hostname to `edgecaster`
-- Create the `edgecaster` user (default password: `edgecaster` — change immediately)
-- Install all dependencies and start services
-- Be accessible at `http://edgecaster.local` or `http://<device-ip>`
-
-## Local Development
-
-### Backend
-
+### Local development
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+# Backend
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Run backend (dev mode)
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+# Frontend (dev server on :5173, proxies /api to :8000)
+cd frontend && npm install && npm run dev
 
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend dev server runs on `http://localhost:5173` and proxies `/api` to the backend.
-
-### Run Tests
-
-```bash
-pip install pytest pytest-asyncio
+# Tests & linting
 python -m pytest backend/tests/ -v
+ruff check backend/ && (cd frontend && npx tsc --noEmit)
 ```
 
-### Linting
+### Notes
+- The web UI has **no built-in login** — run EdgeCaster on a trusted network. RTSP streams are unauthenticated in v1 (can be restricted via MediaMTX config).
+- The API key is stored in `/etc/edgecaster/config.yaml` (not world-readable) and is never logged.
+- Auto-updates use git fast-forward pulls during a configurable nightly window (default 2–5 AM), set under Settings or in `config.yaml`.
 
-```bash
-ruff check backend/
-cd frontend && npx tsc --noEmit
-```
-
-## Production Deployment
-
-The installer (`scripts/install.sh`) handles everything:
-
-- Installs FFmpeg, Python, Node.js, Nginx, MediaMTX
-- Creates `edgecaster` system user
-- Sets up directories: `/etc/edgecaster`, `/var/lib/edgecaster`, `/var/log/edgecaster`
-- Builds the frontend
-- Installs and starts systemd services
-- Configures Nginx reverse proxy on port 80
-- Sets up log rotation and auto-update timer
-
-### Systemd Services
-
-| Service | Purpose |
-|---------|---------|
-| `mediamtx.service` | RTSP server on port 8554 |
-| `edgecaster.service` | Backend API on port 8000 (behind Nginx) |
-| `edgecaster-update.timer` | Hourly update check |
-
-```bash
-# Check status
-sudo systemctl status edgecaster
-sudo systemctl status mediamtx
-
-# View logs
-journalctl -u edgecaster -f
-journalctl -u mediamtx -f
-```
-
-### Auto-Updates
-
-EdgeCaster checks for updates hourly via a systemd timer. Updates only apply during a configurable window (default: 2:00–5:00 AM) and use git fast-forward pulls.
-
-The update window can be configured through the Settings page in the web UI, or directly in `/etc/edgecaster/config.yaml`:
-
-```yaml
-auto_update_enabled: true
-update_hour_start: 2
-update_hour_end: 5
-```
-
-### Manual Update
-
-```bash
-sudo bash scripts/edgecaster-update.sh
-```
-
-### Uninstall
-
-```bash
-sudo bash scripts/uninstall.sh
-```
-
-## Configuration
-
-### Paths
-
-| Path | Purpose |
-|------|---------|
-| `/etc/edgecaster/config.yaml` | Main configuration |
-| `/etc/edgecaster/mediamtx.yml` | MediaMTX configuration |
-| `/var/lib/edgecaster/state.json` | Persistent stream state |
-| `/var/log/edgecaster/` | Application logs |
-
-### Network Ports
-
-| Port | Purpose |
-|------|---------|
-| 80 | Web UI (Nginx) |
-| 8000 | Backend API (internal, localhost only) |
-| 8554 | RTSP streams |
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/auth/status` | Check setup state |
-| GET | `/api/settings` | Get app settings |
-| POST | `/api/settings/api-key` | Set Rhombus API key |
-| PUT | `/api/settings/update-schedule` | Configure auto-update window |
-| POST | `/api/settings/discovery/refresh` | Refresh camera list |
-| GET | `/api/cameras` | List discovered cameras |
-| GET | `/api/streams` | List active streams |
-| POST | `/api/streams/{uuid}/enable` | Start RTSP stream |
-| POST | `/api/streams/{uuid}/disable` | Stop RTSP stream |
-| GET | `/api/system/status` | System health metrics |
-
-## Troubleshooting
-
-### No cameras found
-- Verify your Rhombus Org API Key is valid
-- Check the device has network access to `api2.rhombussystems.com`
-- Try refreshing discovery from the Settings page
-
-### Stream not starting
-- Check FFmpeg is installed: `ffmpeg -version`
-- Check MediaMTX is running: `systemctl status mediamtx`
-- Check logs: `journalctl -u edgecaster -f`
-- Ensure the camera is online and accessible on the local network
-
-### RTSP URL not working
-- Confirm the stream shows "running" in the UI
-- Test with VLC: `vlc rtsp://<device-ip>:8554/<path>`
-- Check port 8554 is not blocked by a firewall
-
-### Auto-update not running
-- Check timer status: `systemctl status edgecaster-update.timer`
-- Check update logs: `cat /var/log/edgecaster/update.log`
-- Verify the installation directory contains a `.git` folder
-- Confirm the current hour falls within the update window
-
-## Limitations
-
-- Maximum 10 concurrent streams (Pi CPU constraint, configurable via `max_streams`)
-- RTSP authentication is not enabled in v1 (can be added via MediaMTX config)
-- Cameras must be accessible on the local network for raw stream URLs
-- Secure Raw Stream tokens may expire; EdgeCaster auto-recreates them on failure
-- No HTTP-level authentication on the web UI — deploy on a trusted network only
-- Auto-updates require a git-based installation (not standalone packages)
-
-## Security Notes
-
-- The API key is stored in `/etc/edgecaster/config.yaml` (owned by `edgecaster` user, not world-readable)
-- API keys are never logged or exposed in API responses
-- The web UI has no built-in authentication — it should only be exposed on trusted networks
-- The systemd service runs with hardened security options (NoNewPrivileges, ProtectSystem=strict, ProtectHome, PrivateTmp)
-- RTSP streams are unauthenticated in v1; restrict access via network controls
-
-## Rhombus API
-
-This project uses the [Rhombus API](https://apidocs.rhombussystems.com/) with an Organization API Key. Endpoints used:
-
-- `POST /api/camera/getMinimalCameraStateList` — Camera discovery
-- `POST /api/camera/createRawHttpStream` — Create Secure Raw Stream
-- `POST /api/camera/deleteRawHttpStream` — Clean up stream
-- `POST /api/camera/getRawHttpStreams` — List existing raw streams
-- `POST /api/location/getLocationLabelsForOrg` — Location name resolution
+</details>
 
 ## License
-
 Apache 2.0 — see [LICENSE](LICENSE)

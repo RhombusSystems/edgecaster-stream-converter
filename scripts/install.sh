@@ -69,9 +69,12 @@ echo ">>> Creating directories..."
 mkdir -p "$CONFIG_DIR" "$STATE_DIR" "$LOG_DIR" "$INSTALL_DIR"
 
 # 6. Copy application code
+# NOTE: .git is intentionally INCLUDED so /opt/edgecaster is a real git repo and
+# the hourly auto-updater can fast-forward from origin/main (matches the Pi image,
+# which git-clones into place). Requires the source to be a git checkout of the repo.
 echo ">>> Installing application..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-rsync -a --exclude='.git' --exclude='node_modules' --exclude='venv' \
+rsync -a --exclude='node_modules' --exclude='venv' \
     --exclude='__pycache__' --exclude='data' --exclude='frontend/dist' \
     "$SCRIPT_DIR/" "$INSTALL_DIR/"
 
