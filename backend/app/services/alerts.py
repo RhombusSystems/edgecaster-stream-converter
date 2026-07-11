@@ -70,12 +70,14 @@ class AlertManager:
             alert.severity = severity
             alert.message = message
 
-        # Cooldown gate on delivery (not on tracking).
+        # Cooldown gate on delivery (not on tracking). Only start the cooldown
+        # on a SUCCESSFUL delivery, so an alert raised while disabled (or during
+        # a webhook outage) still fires promptly once delivery is possible.
         last = self._last_sent.get(alert_type, 0)
         if now - last < COOLDOWN_SECONDS:
             return
-        self._last_sent[alert_type] = now
-        await self._deliver("alert", alert, details or {})
+        if await self._deliver("alert", alert, details or {}):
+            self._last_sent[alert_type] = now
 
     async def clear_alert(self, alert_type: str) -> None:
         """Clear a previously-active condition and notify recovery."""

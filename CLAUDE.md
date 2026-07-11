@@ -61,7 +61,7 @@ Core orchestrator managing FFmpeg subprocesses. Maintains in-memory map of `Mana
 
 ### Alerts, Metrics & MediaMTX API (added subsystems)
 - `services/alerts.py` — `AlertManager` POSTs JSON to a configured webhook (Slack/Make/custom) with cooldown + hysteresis + clear-on-recovery. Triggers: stream-down/retries-exhausted (from stream manager), under-voltage/thermal/high-CPU/load (from metrics loop).
-- `services/health.py` — `MetricsCollector` samples non-blocking CPU, memory, Pi temperature (`/sys/class/thermal`), throttle bitmask (`vcgencmd get_throttled`), and load average. A background `metrics_loop` (main.py, ~2s) samples, polls the MediaMTX API, and evaluates alerts.
+- `services/health.py` — `MetricsCollector` samples non-blocking CPU, memory, Pi temperature (scans all `/sys/class/thermal/thermal_zone*` + hwmon + `vcgencmd` fallback), throttle bitmask (`vcgencmd get_throttled`), and load average. A background `metrics_loop` (main.py, ~2s) samples, polls the MediaMTX API, and evaluates alerts. **Note:** temperature/throttle/cpu-freq require the Pi kernel (`linux-raspi`); the Ubuntu `-generic`/`virtual` kernel exposes no sensors, so those read 0/"unknown" (handled gracefully; `install.sh` warns about it).
 - `services/mediamtx.py` — besides URL builders, `get_path_stats()` queries the MediaMTX control API (`127.0.0.1:9997/v3/paths/list`) for per-path liveness/throughput; also enabled in `packaging/mediamtx.yml`.
 - SSE: `GET /api/system/stream` pushes `SystemStatus` (+ active alerts) ~1s; frontend Dashboard subscribes via `EventSource`.
 

@@ -119,6 +119,7 @@ ruff check backend/ && (cd frontend && npx tsc --noEmit)
 - The web UI has **no built-in login** — run EdgeCaster on a trusted network. RTSP streams are unauthenticated in v1 (can be restricted via MediaMTX config).
 - The API key is stored in `/etc/edgecaster/config.yaml` (not world-readable) and is never logged.
 - Auto-updates use git fast-forward pulls during a configurable nightly window (default 2–5 AM), set under Settings or in `config.yaml`.
+- **Raspberry Pi temperature / power-throttle metrics need the Pi kernel.** On Ubuntu, install it with `sudo apt-get install -y linux-raspi && sudo reboot`. The default `-generic`/`virtual` kernel exposes no thermal sensors, so those tiles show "N/A" (everything else still works).
 
 </details>
 

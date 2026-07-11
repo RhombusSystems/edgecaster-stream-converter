@@ -136,6 +136,19 @@ systemctl restart mediamtx
 systemctl restart edgecaster
 systemctl start edgecaster-update.timer
 
+# 14. Raspberry Pi sensor check — temperature/throttle metrics need the Pi kernel.
+if grep -qi "raspberry pi" /proc/device-tree/model 2>/dev/null; then
+    if ! ls /sys/class/thermal/thermal_zone*/temp >/dev/null 2>&1; then
+        echo ""
+        echo "!!! WARNING: Raspberry Pi detected but no temperature sensors are exposed."
+        echo "    Dashboard Temperature/Power-Throttle metrics will show N/A."
+        echo "    This happens on the Ubuntu '-generic'/'virtual' kernel. To enable them:"
+        echo "        sudo apt-get install -y linux-raspi && sudo reboot"
+        echo "    (the linux-raspi kernel exposes the BCM thermal/hwmon/cpufreq sensors)."
+        echo ""
+    fi
+fi
+
 echo ""
 echo "=== EdgeCaster installed successfully! ==="
 echo ""

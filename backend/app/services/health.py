@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import glob
 import logging
 import os
 import shutil
 import subprocess
 import time
-from pathlib import Path
 
 import psutil
 
@@ -19,17 +19,81 @@ logger = logging.getLogger("edgecaster.health")
 
 _boot_time = time.time()
 
-_THERMAL_ZONE = Path("/sys/class/thermal/thermal_zone0/temp")
+_THERMAL_GLOB = "/sys/class/thermal/thermal_zone*"
+_HWMON_GLOB = "/sys/class/hwmon/hwmon*"
+_CPUFREQ_PATHS = (
+    "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq",
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq",
+)
 _VCGENCMD = shutil.which("vcgencmd") or "/usr/bin/vcgencmd"
 
 
-def read_temperature_c() -> float:
-    """Read SoC temperature in Celsius from sysfs (world-readable). 0 if unavailable."""
+def _read_int(path: str) -> int | None:
     try:
-        raw = _THERMAL_ZONE.read_text().strip()
-        return round(int(raw) / 1000.0, 1)
-    except Exception:  # noqa: BLE001 - non-Pi / missing sysfs
-        return 0.0
+        with open(path) as f:
+            return int(f.read().strip())
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def scan_thermal_zones(zone_dirs: list[str]) -> float:
+    """Return a plausible CPU/SoC temperature (°C) from thermal zones, else 0.
+
+    Prefers a zone whose ``type`` mentions cpu/soc; otherwise the hottest valid
+    zone. Robust to the CPU zone not being ``thermal_zone0`` (varies by kernel).
+    """
+    best = 0.0
+    for zone in sorted(zone_dirs):
+        milli = _read_int(os.path.join(zone, "temp"))
+        if milli is None:
+            continue
+        celsius = milli / 1000.0
+        if not (0.0 < celsius < 200.0):  # sanity guard
+            continue
+        ztype = ""
+        try:
+            with open(os.path.join(zone, "type")) as f:
+                ztype = f.read().strip().lower()
+        except Exception:  # noqa: BLE001
+            pass
+        if "cpu" in ztype or "soc" in ztype:
+            return round(celsius, 1)
+        best = max(best, celsius)
+    return round(best, 1)
+
+
+def _scan_hwmon(hwmon_dirs: list[str]) -> float:
+    best = 0.0
+    for h in hwmon_dirs:
+        for f in glob.glob(os.path.join(h, "temp*_input")):
+            milli = _read_int(f)
+            if milli is not None and 0 < milli / 1000.0 < 200:
+                best = max(best, milli / 1000.0)
+    return round(best, 1)
+
+
+def read_temperature_c() -> float:
+    """Best-effort SoC temperature in °C. 0.0 if the kernel exposes no sensor.
+
+    Order: thermal zones (any index) -> hwmon -> ``vcgencmd measure_temp``.
+    On the Ubuntu ``-generic`` kernel none of these exist on a Pi; the Pi
+    ``linux-raspi`` kernel is required to expose them.
+    """
+    t = scan_thermal_zones(glob.glob(_THERMAL_GLOB))
+    if t > 0:
+        return t
+    t = _scan_hwmon(glob.glob(_HWMON_GLOB))
+    if t > 0:
+        return t
+    try:
+        out = subprocess.run(  # noqa: S603
+            [_VCGENCMD, "measure_temp"], capture_output=True, text=True, timeout=2
+        )
+        if out.returncode == 0 and "=" in out.stdout:  # "temp=48.0'C"
+            return round(float(out.stdout.split("=")[1].split("'")[0]), 1)
+    except Exception:  # noqa: BLE001
+        pass
+    return 0.0
 
 
 def parse_throttled(hex_value: str) -> dict:
@@ -109,9 +173,16 @@ def _load_avg() -> tuple[float, float, float]:
 def _cpu_freq_mhz() -> float:
     try:
         freq = psutil.cpu_freq()
-        return round(freq.current, 0) if freq else 0.0
-    except Exception:  # noqa: BLE001
-        return 0.0
+        if freq and freq.current:
+            return round(freq.current, 0)
+    except Exception:  # noqa: BLE001 - psutil returns None on some ARM kernels
+        pass
+    # Fallback: read scaling freq (kHz) from sysfs.
+    for path in _CPUFREQ_PATHS:
+        khz = _read_int(path)
+        if khz:
+            return round(khz / 1000.0, 0)
+    return 0.0
 
 
 class MetricsCollector:
